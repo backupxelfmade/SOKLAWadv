@@ -11,6 +11,7 @@ import BlogPostDetailPage from './pages/BlogPostDetailPage';
 import BlogPostPage from './pages/BlogPostPage';
 import ContactPage from './pages/ContactPage';
 import CareersPage from './pages/CareersPage';
+import GalleryPage from './pages/GalleryPage';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:serviceId" element={<ServiceDetailPage />} />
         <Route path="/team" element={<TeamPage />} />
+        <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/:slug" element={<BlogPostDetailPage />} />
         <Route path="/blog/post/:postId" element={<BlogPostPage />} />
