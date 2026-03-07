@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 const slides = [
   {
-    image:          'https://i.postimg.cc/Px2cZQf5/7-X2-A2923-1.jpg',
+    image:          'https://npovpviamzjxlydkpulo.supabase.co/storage/v1/object/public/gallery/SOKLAW%20PHOTOS%202026%20(3).jpg',
     position:       'center 30%',
     mobilePosition: 'center 20%',
     alt:            'SOKLaw Advocates senior advocates in Nairobi office',
