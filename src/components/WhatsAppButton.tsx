@@ -2,91 +2,151 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 const PROFILE_IMAGE = '/images/support-avatar.jpg';
 
-const ROUTE_MESSAGES: Record<string, { heading: string; body: string }> = {
-  '/':         { heading: 'Welcome to SOK Law 👋',            body: "Got a legal question? We're here whenever you're ready." },
-  '#about':    { heading: 'Want to know more about us?',       body: "Chat with our team — we're happy to tell you about the firm." },
-  '/services': { heading: 'Not sure which service fits?',      body: "We can help point you in the right direction." },
-  '/team':     { heading: 'Want to speak to an advocate?',     body: "Send us a message and we'll connect you with the right person." },
-  '/gallery':  { heading: 'Got any questions?',                body: "We're available if you'd like to know more about our work." },
-  '/careers':  { heading: 'Interested in joining SOK Law?',    body: "Chat with us about opportunities here." },
-  '/blog':     { heading: 'Have a related legal question?',    body: "We're happy to help with anything you're reading about." },
-  '/contact':  { heading: 'Prefer a faster reply?',            body: "WhatsApp us directly — we typically respond right away." },
+// ── Message pool per route ──
+// Multiple messages per route so repeat check-ins feel fresh
+const ROUTE_MESSAGES: Record<string, { heading: string; body: string }[]> = {
+  '/': [
+    { heading: "Welcome to SOK Law 👋",          body: "Feel free to ask us anything — we're here to help." },
+    { heading: "Still exploring?",                body: "Our team is online if you have any questions." },
+    { heading: "Need legal guidance?",            body: "We're just a message away whenever you're ready." },
+  ],
+  '#about': [
+    { heading: "Getting to know us?",             body: "We'd love to tell you more about our firm directly." },
+    { heading: "Have any questions about us?",    body: "Our team is happy to chat." },
+  ],
+  '/services': [
+    { heading: "Looking for the right service?",  body: "We can help figure out what fits your situation." },
+    { heading: "Not sure where to start?",        body: "Just send us a message — no commitment needed." },
+    { heading: "Seen something relevant?",        body: "Our advocates can walk you through any of our services." },
+  ],
+  '/team': [
+    { heading: "Want to speak to someone?",       body: "We'll connect you with the right advocate." },
+    { heading: "Have a question for our team?",   body: "Reach out — we're happy to help." },
+  ],
+  '/gallery': [
+    { heading: "Curious about our work?",         body: "We're available if you'd like to know more." },
+    { heading: "Got questions about what you see?", body: "Just ask — we're right here." },
+  ],
+  '/careers': [
+    { heading: "Interested in joining us?",       body: "Chat with us about opportunities at SOK Law." },
+    { heading: "Want to know more about a role?", body: "We're happy to answer any questions." },
+  ],
+  '/blog': [
+    { heading: "Have a related legal question?",  body: "We're happy to help with anything you're reading about." },
+    { heading: "Found this useful?",              body: "If you need legal advice, our team is here." },
+  ],
+  '/contact': [
+    { heading: "Prefer a faster reply?",          body: "WhatsApp us directly — we typically respond right away." },
+  ],
 };
 
-const IDLE_MESSAGE = {
-  heading: 'Still looking around?',
-  body:    "No rush — we're here if you need us. 😊",
-};
+// Milestone-based scroll messages — shown at specific scroll depths
+const SCROLL_MILESTONES: { pct: number; heading: string; body: string }[] = [
+  { pct: 0.30, heading: "Reading through?",        body: "Let us know if anything catches your eye." },
+  { pct: 0.60, heading: "Still with us? 😊",        body: "We're here if you'd like to talk through anything." },
+  { pct: 0.90, heading: "Reached the bottom!",      body: "Didn't find what you needed? Just ask us directly." },
+];
 
 const WhatsAppButton = () => {
-  const [open, setOpen]             = useState(false);
-  const [message, setMessage]       = useState('');
-  const [showTeaser, setShowTeaser] = useState(false);
-  const [teaser, setTeaser]         = useState(IDLE_MESSAGE);
-  const [imgError, setImgError]     = useState(false);
-  const textareaRef                 = useRef<HTMLTextAreaElement>(null);
-  const idleTimer                   = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hideTimer                   = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const teaserShown                 = useRef(false);
+  const [open, setOpen]               = useState(false);
+  const [message, setMessage]         = useState('');
+  const [showTeaser, setShowTeaser]   = useState(false);
+  const [teaser, setTeaser]           = useState<{ heading: string; body: string } | null>(null);
+  const [imgError, setImgError]       = useState(false);
+  const textareaRef                   = useRef<HTMLTextAreaElement>(null);
+
+  // Tracking refs
+  const hideTimer                     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const checkInTimer                  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const messageIndex                  = useRef(0);       // cycles through route messages
+  const checkInCount                  = useRef(0);       // total check-ins shown this session
+  const shownMilestones               = useRef<Set<number>>(new Set());
+  const lastScrollY                   = useRef(0);
+  const scrollActive                  = useRef(false);   // true when user is actively scrolling
+  const scrollTimeout                 = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const phoneNumber    = '+254720738641';
   const defaultMessage = 'Hello, I would like to inquire about your legal services.';
+  const MAX_CHECKINS   = 3; // never show more than 3 popups per session
 
-  const getRouteMessage = useCallback(() => {
+  const getRouteMessages = useCallback((): { heading: string; body: string }[] => {
     const path = window.location.pathname;
     const hash = window.location.hash;
     if (hash === '#about') return ROUTE_MESSAGES['#about'];
     return ROUTE_MESSAGES[path] ?? ROUTE_MESSAGES['/'];
   }, []);
 
-  const showTeaserFor = useCallback((msg: typeof IDLE_MESSAGE, duration: number) => {
-    if (teaserShown.current || open) return;
-    if (sessionStorage.getItem('wa_teaser_seen')) return;
+  // ── Display teaser ──
+  const showMsg = useCallback((msg: { heading: string; body: string }, duration = 8000) => {
+    if (open) return;
+    if (checkInCount.current >= MAX_CHECKINS) return;
 
-    teaserShown.current = true;
-    sessionStorage.setItem('wa_teaser_seen', '1');
+    // Clear any existing auto-hide
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+
+    checkInCount.current += 1;
     setTeaser(msg);
     setShowTeaser(true);
 
-    if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => setShowTeaser(false), duration);
   }, [open]);
 
-  // ── Trigger 1: First load — 2s warm welcome, auto-hides in 6s ──
+  // ── Trigger 1: First load — 2s warm welcome ──
   useEffect(() => {
-    if (sessionStorage.getItem('wa_teaser_seen')) return;
-    const t = setTimeout(() => showTeaserFor(getRouteMessage(), 6000), 2000);
+    const t = setTimeout(() => {
+      const msgs = getRouteMessages();
+      showMsg(msgs[0], 7000);
+      messageIndex.current = 1;
+    }, 2000);
     return () => clearTimeout(t);
-  }, [showTeaserFor, getRouteMessage]);
+  }, [showMsg, getRouteMessages]);
 
-  // ── Trigger 2: Scroll to 60% ──
+  // ── Trigger 2: Scroll milestones ──
   useEffect(() => {
     const onScroll = () => {
       const pct = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
-      if (pct >= 0.6) {
-        showTeaserFor(getRouteMessage(), 12000);
-        window.removeEventListener('scroll', onScroll);
+
+      for (const milestone of SCROLL_MILESTONES) {
+        if (pct >= milestone.pct && !shownMilestones.current.has(milestone.pct)) {
+          shownMilestones.current.add(milestone.pct);
+          // Small delay so it doesn't fire mid-scroll
+          setTimeout(() => showMsg({ heading: milestone.heading, body: milestone.body }, 8000), 800);
+        }
       }
+
+      // Track scroll activity
+      lastScrollY.current = window.scrollY;
+      scrollActive.current = true;
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+      scrollTimeout.current = setTimeout(() => { scrollActive.current = false; }, 1500);
     };
+
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [showTeaserFor, getRouteMessage]);
+  }, [showMsg]);
 
-  // ── Trigger 3: Idle 45s ──
+  // ── Trigger 3: Periodic check-ins every 40s while user is on page ──
+  // Only fires if user has scrolled at least a little (engaged, not AFK)
   useEffect(() => {
-    const reset = () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-      idleTimer.current = setTimeout(() => showTeaserFor(IDLE_MESSAGE, 12000), 45000);
-    };
-    const events = ['mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
-    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
-    reset();
-    return () => {
-      events.forEach((e) => window.removeEventListener(e, reset));
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-    };
-  }, [showTeaserFor]);
+    checkInTimer.current = setInterval(() => {
+      if (open) return;
+      if (checkInCount.current >= MAX_CHECKINS) {
+        if (checkInTimer.current) clearInterval(checkInTimer.current);
+        return;
+      }
+      // Only check in if user has scrolled since last check-in
+      if (lastScrollY.current > 100) {
+        const msgs = getRouteMessages();
+        const idx  = messageIndex.current % msgs.length;
+        showMsg(msgs[idx], 8000);
+        messageIndex.current += 1;
+      }
+    }, 40000);
 
+    return () => { if (checkInTimer.current) clearInterval(checkInTimer.current); };
+  }, [open, showMsg, getRouteMessages]);
+
+  // Close teaser when chat opens
   useEffect(() => {
     if (open) {
       setShowTeaser(false);
@@ -98,9 +158,11 @@ const WhatsAppButton = () => {
     if (open && textareaRef.current) textareaRef.current.focus();
   }, [open]);
 
+  // Cleanup
   useEffect(() => () => {
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-    if (idleTimer.current) clearTimeout(idleTimer.current);
+    if (hideTimer.current)   clearTimeout(hideTimer.current);
+    if (checkInTimer.current) clearInterval(checkInTimer.current);
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
   }, []);
 
   const handleSend = () => {
@@ -124,12 +186,9 @@ const WhatsAppButton = () => {
     const dims     = { sm: 'w-6 h-6', md: 'w-10 h-10', lg: 'w-8 h-8' };
     const iconDims = { sm: 'w-3 h-3', md: 'w-5 h-5',   lg: 'w-4 h-4' };
     return !imgError ? (
-      <img
-        src={PROFILE_IMAGE}
-        alt="SOK Law Support"
+      <img src={PROFILE_IMAGE} alt="SOK Law Support"
         onError={() => setImgError(true)}
-        className={`${dims[size]} rounded-full object-cover`}
-      />
+        className={`${dims[size]} rounded-full object-cover`} />
     ) : (
       <div className={`${dims[size]} rounded-full bg-[#075e54] flex items-center justify-center text-white`}>
         <WhatsAppIcon className={iconDims[size]} />
@@ -145,68 +204,94 @@ const WhatsAppButton = () => {
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes teaserIn {
-          from { opacity: 0; transform: translateY(10px); }
+          from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes teaserOut {
+          from { opacity: 1; transform: translateY(0); }
+          to   { opacity: 0; transform: translateY(6px); }
+        }
         .wa-chatbox { animation: fadeInUp 0.25s ease-out; }
-        .wa-teaser  { animation: teaserIn 0.35s ease-out; }
+        .wa-teaser  { animation: teaserIn 0.3s ease-out forwards; }
       `}</style>
 
-      {/* ── Teaser Bubble ── */}
-      {showTeaser && !open && (
-        <div className="wa-teaser fixed bottom-[88px] right-4 sm:right-6 z-50 w-60">
-          <div className="relative bg-white rounded-2xl rounded-br-sm shadow-[0_8px_32px_rgba(0,0,0,0.11)] border border-gray-100 overflow-hidden">
+      {/* ── Teaser Popup ── */}
+      {showTeaser && !open && teaser && (
+        <div className="wa-teaser fixed bottom-[88px] right-4 sm:right-6 z-50 w-64">
+          <div className="relative bg-white rounded-2xl rounded-br-sm overflow-hidden
+            shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100">
 
-            <div className="h-1 w-full bg-[#25d366]" />
+            {/* Top green bar */}
+            <div className="h-[3px] w-full bg-[#25d366]" />
 
-            <div className="px-4 pt-3 pb-3.5">
-              {/* Ping dot */}
-              <span className="absolute top-4 right-3 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25d366] opacity-60" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#25d366]" />
-              </span>
-
-              {/* Agent row */}
-              <div className="flex items-center gap-2 mb-2.5">
+            <div className="p-3.5">
+              {/* Header row */}
+              <div className="flex items-center gap-2.5 mb-3">
                 <div className="relative flex-shrink-0">
                   <Avatar size="lg" />
-                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#25d366] border-2 border-white" />
+                  {/* Online ring */}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#25d366] border-2 border-white" />
                 </div>
-                <div>
-                  <p className="text-[11px] font-bold text-gray-800 leading-none">SOK Law</p>
-                  <p className="text-[10px] text-[#25d366] font-medium mt-0.5">● Online</p>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[11px] font-bold text-gray-800 truncate">SOK Law</p>
+                    {/* Typing indicator dots */}
+                    <span className="flex items-center gap-[3px] ml-0.5">
+                      {[0, 150, 300].map((delay) => (
+                        <span
+                          key={delay}
+                          className="w-1 h-1 rounded-full bg-[#25d366]"
+                          style={{
+                            animation: `bounce 1s ${delay}ms infinite`,
+                          }}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[#25d366] font-medium">● Online now</p>
                 </div>
+
+                {/* Dismiss */}
+                <button
+                  onClick={() => setShowTeaser(false)}
+                  className="text-gray-300 hover:text-gray-400 transition-colors flex-shrink-0 self-start"
+                  aria-label="Dismiss"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
 
-              <p className="text-xs font-semibold text-gray-700 mb-0.5 pr-4 leading-snug">
-                {teaser.heading}
-              </p>
-              <p className="text-[11px] text-gray-400 leading-snug pr-2">
-                {teaser.body}
-              </p>
+              {/* Message bubble */}
+              <div className="bg-[#f0fdf4] border border-[#25d366]/15 rounded-xl rounded-tl-sm px-3 py-2.5 mb-3">
+                <p className="text-[11px] font-semibold text-gray-800 leading-snug mb-0.5">
+                  {teaser.heading}
+                </p>
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  {teaser.body}
+                </p>
+              </div>
 
-              <p
-                className="mt-2.5 text-[11px] font-semibold text-[#25d366] cursor-pointer hover:underline"
+              {/* CTA */}
+              <button
                 onClick={() => { setOpen(true); setShowTeaser(false); }}
+                className="w-full flex items-center justify-center gap-1.5 bg-[#25d366] hover:bg-[#1ebe5d] text-white text-[11px] font-semibold py-2 rounded-xl transition-colors duration-200"
               >
-                Chat with us →
-              </p>
+                <WhatsAppIcon className="w-3.5 h-3.5" />
+                Reply on WhatsApp
+              </button>
             </div>
 
-            {/* Dismiss */}
-            <button
-              onClick={() => setShowTeaser(false)}
-              className="absolute top-3 right-2.5 text-gray-300 hover:text-gray-400 transition-colors"
-              aria-label="Dismiss"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
             {/* Bubble tail */}
-            <div className="absolute -bottom-[9px] right-5 w-0 h-0 border-l-[9px] border-l-transparent border-t-[9px] border-t-white" />
-            <div className="absolute -bottom-[11px] right-[19px] w-0 h-0 border-l-[10px] border-l-transparent border-t-[10px] border-t-gray-100" style={{ zIndex: -1 }} />
+            <div className="absolute -bottom-[9px] right-5 w-0 h-0
+              border-l-[9px] border-l-transparent
+              border-t-[9px] border-t-white" />
+            <div className="absolute -bottom-[11px] right-[19px] w-0 h-0
+              border-l-[10px] border-l-transparent
+              border-t-[10px] border-t-gray-100"
+              style={{ zIndex: -1 }} />
           </div>
         </div>
       )}
@@ -214,8 +299,6 @@ const WhatsAppButton = () => {
       {/* ── Chatbox ── */}
       {open && (
         <div className="wa-chatbox fixed bottom-[88px] right-4 sm:right-6 z-50 w-[300px] sm:w-[320px] rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.18)] overflow-hidden flex flex-col">
-
-          {/* Header */}
           <div className="bg-[#075e54] px-4 py-3 flex items-center gap-3">
             <div className="relative flex-shrink-0">
               <Avatar size="md" />
@@ -225,18 +308,15 @@ const WhatsAppButton = () => {
               <p className="text-white font-bold text-sm leading-tight">SOK Law</p>
               <p className="text-white/50 text-[11px]">Simiyu, Opondo, Kiranga & Advocates</p>
             </div>
-            <button
-              onClick={() => setOpen(false)}
+            <button onClick={() => setOpen(false)}
               className="text-white/50 hover:text-white transition-colors flex-shrink-0"
-              aria-label="Close chat"
-            >
+              aria-label="Close chat">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
-          {/* Chat body */}
           <div
             className="px-4 py-4 flex flex-col gap-2"
             style={{
@@ -267,7 +347,6 @@ const WhatsAppButton = () => {
             </button>
           </div>
 
-          {/* Input */}
           <div className="flex items-end gap-2 px-3 py-2.5 bg-[#f0f0f0] border-t border-gray-200">
             <textarea
               ref={textareaRef}
@@ -279,18 +358,14 @@ const WhatsAppButton = () => {
               className="flex-1 resize-none rounded-3xl border-0 bg-white px-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#25d366]/30 transition-all leading-5 max-h-24 overflow-y-auto shadow-sm"
               style={{ scrollbarWidth: 'none' }}
             />
-            <button
-              onClick={handleSend}
-              aria-label="Send message"
-              className="flex-shrink-0 w-9 h-9 rounded-full bg-[#25d366] hover:bg-[#1ebe5d] text-white flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
-            >
+            <button onClick={handleSend} aria-label="Send message"
+              className="flex-shrink-0 w-9 h-9 rounded-full bg-[#25d366] hover:bg-[#1ebe5d] text-white flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 active:scale-95">
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 translate-x-0.5">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
               </svg>
             </button>
           </div>
 
-          {/* Footer */}
           <div className="bg-[#f0f0f0] pb-2.5 flex items-center justify-center gap-1.5">
             <WhatsAppIcon className="w-3 h-3 text-[#25d366]" />
             <span className="text-[10px] text-gray-400">Chat via WhatsApp · SOK Law</span>
