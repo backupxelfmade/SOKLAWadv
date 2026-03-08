@@ -44,41 +44,36 @@ const SCROLL_MILESTONES: { pct: number; heading: string; body: string }[] = [
   { pct: 0.90, heading: "Reached the bottom!", body: "Didn't find what you needed? Just ask us directly." },
 ];
 
-// ── Typing animation hook ──
-// Simulates the message being typed out character by character
-const useTypingEffect = (
-  text: string,
-  enabled: boolean,
-  typingSpeed = 28
-) => {
-  const [displayed, setDisplayed] = useState('');
-  const [isDone, setIsDone]       = useState(false);
+// ── Types character by character, body only appears after heading newline ──
+const useTypingEffect = (text: string, active: boolean, speed = 22) => {
+  const [charCount, setCharCount] = useState(0);
 
   useEffect(() => {
-    if (!enabled) { setDisplayed(text); setIsDone(true); return; }
-    setDisplayed('');
-    setIsDone(false);
+    if (!active) { setCharCount(0); return; }
+    setCharCount(0);
     let i = 0;
-    const interval = setInterval(() => {
+    const t = setInterval(() => {
       i++;
-      setDisplayed(text.slice(0, i));
-      if (i >= text.length) { clearInterval(interval); setIsDone(true); }
-    }, typingSpeed);
-    return () => clearInterval(interval);
-  }, [text, enabled, typingSpeed]);
+      setCharCount(i);
+      if (i >= text.length) clearInterval(t);
+    }, speed);
+    return () => clearInterval(t);
+  }, [text, active, speed]);
 
+  const displayed = text.slice(0, charCount);
+  const isDone    = charCount >= text.length && text.length > 0;
   return { displayed, isDone };
 };
 
 const WhatsAppButton = () => {
-  const [open, setOpen]               = useState(false);
-  const [message, setMessage]         = useState('');
-  const [showTeaser, setShowTeaser]   = useState(false);
-  const [teaser, setTeaser]           = useState<{ heading: string; body: string } | null>(null);
-  const [isTyping, setIsTyping]       = useState(false);   // shows dots before message appears
-  const [showBubble, setShowBubble]   = useState(false);   // shows the actual bubble
-  const [imgError, setImgError]       = useState(false);
-  const textareaRef                   = useRef<HTMLTextAreaElement>(null);
+  const [open, setOpen]             = useState(false);
+  const [message, setMessage]       = useState('');
+  const [showTeaser, setShowTeaser] = useState(false);
+  const [teaser, setTeaser]         = useState<{ heading: string; body: string } | null>(null);
+  const [isTyping, setIsTyping]     = useState(false);  // dots phase
+  const [showBubble, setShowBubble] = useState(false);  // text phase
+  const [imgError, setImgError]     = useState(false);
+  const textareaRef                 = useRef<HTMLTextAreaElement>(null);
 
   const hideTimer       = useRef<ReturnType<typeof setTimeout> | null>(null);
   const checkInTimer    = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -92,14 +87,15 @@ const WhatsAppButton = () => {
   const defaultMessage = 'Hello, I would like to inquire about your legal services.';
   const MAX_CHECKINS   = 3;
 
-  // Full message = heading + body combined for typing effect
-  const fullTeaserText = teaser ? `${teaser.heading}\n${teaser.body}` : '';
-  const { displayed, isDone } = useTypingEffect(fullTeaserText, showBubble, 25);
+  // Combined text — heading + newline + body
+  const fullText = teaser ? `${teaser.heading}\n${teaser.body}` : '';
+  const { displayed, isDone } = useTypingEffect(fullText, showBubble, 22);
 
-  // Split displayed text back into heading/body for rendering
-  const newlineIdx      = displayed.indexOf('\n');
-  const displayHeading  = newlineIdx === -1 ? displayed : displayed.slice(0, newlineIdx);
-  const displayBody     = newlineIdx === -1 ? '' : displayed.slice(newlineIdx + 1);
+  // Split at newline as it's typed — body only renders once '\n' is reached
+  const nlIdx          = displayed.indexOf('\n');
+  const displayHeading = nlIdx === -1 ? displayed : displayed.slice(0, nlIdx);
+  const displayBody    = nlIdx === -1 ? ''        : displayed.slice(nlIdx + 1);
+  const headingDone    = nlIdx !== -1 || isDone;
 
   const getRouteMessages = useCallback((): { heading: string; body: string }[] => {
     const path = window.location.pathname;
@@ -108,7 +104,7 @@ const WhatsAppButton = () => {
     return ROUTE_MESSAGES[path] ?? ROUTE_MESSAGES['/'];
   }, []);
 
-  const showMsg = useCallback((msg: { heading: string; body: string }, duration = 9000) => {
+  const showMsg = useCallback((msg: { heading: string; body: string }, duration = 10000) => {
     if (open) return;
     if (checkInCount.current >= MAX_CHECKINS) return;
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -119,11 +115,12 @@ const WhatsAppButton = () => {
     setShowBubble(false);
     setShowTeaser(true);
 
-    // Show typing dots for 1.5s, then reveal bubble with typing effect
+    // Phase 1: show dot bubble for 1.6s
+    // Phase 2: hide dots, start character typing
     setTimeout(() => {
       setIsTyping(false);
       setShowBubble(true);
-    }, 1500);
+    }, 1600);
 
     hideTimer.current = setTimeout(() => setShowTeaser(false), duration);
   }, [open]);
@@ -132,7 +129,7 @@ const WhatsAppButton = () => {
   useEffect(() => {
     const t = setTimeout(() => {
       const msgs = getRouteMessages();
-      showMsg(msgs[0], 9000);
+      showMsg(msgs[0]);
       messageIndex.current = 1;
     }, 2000);
     return () => clearTimeout(t);
@@ -142,10 +139,10 @@ const WhatsAppButton = () => {
   useEffect(() => {
     const onScroll = () => {
       const pct = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
-      for (const milestone of SCROLL_MILESTONES) {
-        if (pct >= milestone.pct && !shownMilestones.current.has(milestone.pct)) {
-          shownMilestones.current.add(milestone.pct);
-          setTimeout(() => showMsg({ heading: milestone.heading, body: milestone.body }), 800);
+      for (const m of SCROLL_MILESTONES) {
+        if (pct >= m.pct && !shownMilestones.current.has(m.pct)) {
+          shownMilestones.current.add(m.pct);
+          setTimeout(() => showMsg({ heading: m.heading, body: m.body }), 800);
         }
       }
       lastScrollY.current = window.scrollY;
@@ -156,7 +153,7 @@ const WhatsAppButton = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, [showMsg]);
 
-  // Trigger 3: Periodic check-ins every 40s
+  // Trigger 3: Periodic 40s check-in
   useEffect(() => {
     checkInTimer.current = setInterval(() => {
       if (open) return;
@@ -166,9 +163,8 @@ const WhatsAppButton = () => {
       }
       if (lastScrollY.current > 100) {
         const msgs = getRouteMessages();
-        const idx  = messageIndex.current % msgs.length;
-        showMsg(msgs[idx]);
-        messageIndex.current += 1;
+        showMsg(msgs[messageIndex.current % msgs.length]);
+        messageIndex.current++;
       }
     }, 40000);
     return () => { if (checkInTimer.current) clearInterval(checkInTimer.current); };
@@ -204,17 +200,42 @@ const WhatsAppButton = () => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  const WA_WALLPAPER = {
+    background: '#e5ddd5',
+    backgroundImage: `url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='0.03'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+  };
+
   const WhatsAppIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
     </svg>
   );
 
+  const DoubleTick = () => (
+    <svg viewBox="0 0 16 11" className="w-4 h-3 text-[#53bdeb]" fill="currentColor">
+      <path d="M11.071.653a.56.56 0 0 0-.812 0L4.99 6.124 2.741 3.875a.56.56 0 0 0-.812.812L4.584 7.34a.56.56 0 0 0 .812 0l5.675-5.675a.56.56 0 0 0 0-.812zm2.3 0a.56.56 0 0 0-.812 0L7.29 5.918l-.5-.5a.56.56 0 0 0-.812.812l.9.9a.56.56 0 0 0 .812 0L13.37 1.465a.56.56 0 0 0 0-.812z" />
+    </svg>
+  );
+
+  const BubbleTail = ({ color = 'white' }: { color?: string }) => (
+    <div
+      className="absolute -left-[6px] bottom-[6px] w-0 h-0"
+      style={{ borderRight: `8px solid ${color}`, borderTop: '6px solid transparent', borderBottom: '0 solid transparent' }}
+    />
+  );
+
+  const Cursor = ({ height = '13px' }: { height?: string }) => (
+    <span
+      className="inline-block w-[2px] bg-gray-600 ml-[1px] align-middle animate-pulse"
+      style={{ height }}
+    />
+  );
+
   const Avatar = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
     const dims     = { sm: 'w-6 h-6', md: 'w-10 h-10', lg: 'w-8 h-8' };
     const iconDims = { sm: 'w-3 h-3', md: 'w-5 h-5',   lg: 'w-4 h-4' };
     return !imgError ? (
-      <img src={PROFILE_IMAGE} alt="SOK Law Support"
+      <img src={PROFILE_IMAGE} alt="SOK Law"
         onError={() => setImgError(true)}
         className={`${dims[size]} rounded-full object-cover`} />
     ) : (
@@ -224,9 +245,16 @@ const WhatsAppButton = () => {
     );
   };
 
-  // Blinking cursor shown while typing effect is in progress
-  const Cursor = () => (
-    <span className="inline-block w-[2px] h-[12px] bg-gray-600 ml-[1px] align-middle animate-pulse" />
+  const TypingDots = ({ size = 'sm' }: { size?: 'sm' | 'lg' }) => (
+    <span className="flex items-center gap-[4px]">
+      {[0, 180, 360].map((delay) => (
+        <span
+          key={delay}
+          className={`rounded-full animate-dot-bounce ${size === 'lg' ? 'w-2 h-2 bg-gray-400' : 'w-[5px] h-[5px] bg-[#25d366]'}`}
+          style={{ animationDelay: `${delay}ms` }}
+        />
+      ))}
+    </span>
   );
 
   return (
@@ -234,39 +262,26 @@ const WhatsAppButton = () => {
       {/* ── Teaser Popup ── */}
       {showTeaser && !open && (
         <div className="animate-teaser-in fixed bottom-[88px] right-4 sm:right-6 z-50 w-[272px]">
-          <div className="relative rounded-2xl rounded-br-sm overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.18)]">
+          <div className="rounded-2xl rounded-br-sm overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.18)]">
 
-            {/* WhatsApp dark header */}
+            {/* Header */}
             <div className="bg-[#075e54] px-3.5 py-3 flex items-center gap-2.5">
               <div className="relative flex-shrink-0">
                 <Avatar size="lg" />
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#25d366] border-2 border-[#075e54]" />
               </div>
-
               <div className="flex-1 min-w-0">
                 <p className="text-white text-[13px] font-semibold leading-tight">SOK Law</p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  {/* Always show typing dots — either pre-bubble or during typing */}
-                  {(isTyping || !isDone) && (
-                    <span className="flex items-center gap-[3px]">
-                      {[0, 150, 300].map((delay) => (
-                        <span
-                          key={delay}
-                          className="w-[5px] h-[5px] rounded-full bg-[#25d366] animate-dot-bounce"
-                          style={{ animationDelay: `${delay}ms` }}
-                        />
-                      ))}
-                    </span>
-                  )}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {(isTyping || !isDone) && <TypingDots size="sm" />}
                   <span className="text-white/60 text-[10px]">
-                    {isTyping ? 'typing...' : isDone ? 'online' : 'typing...'}
+                    {isTyping || !isDone ? 'typing...' : 'online'}
                   </span>
                 </div>
               </div>
-
               <button
                 onClick={() => setShowTeaser(false)}
-                className="text-white/50 hover:text-white/90 transition-colors flex-shrink-0 p-1"
+                className="text-white/50 hover:text-white transition-colors p-1 flex-shrink-0"
                 aria-label="Dismiss"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
@@ -275,74 +290,56 @@ const WhatsAppButton = () => {
               </button>
             </div>
 
-            {/* WhatsApp wallpaper body */}
-            <div
-              className="px-3 pt-3 pb-2.5"
-              style={{
-                background: '#e5ddd5',
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='0.03'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-              }}
-            >
-              {/* Typing bubble — shown before message appears */}
+            {/* Body */}
+            <div className="px-3 pt-3 pb-2.5" style={WA_WALLPAPER}>
+
+              {/* Phase 1: dot bubble */}
               {isTyping && (
                 <div className="flex items-end gap-1.5 mb-2">
                   <div className="flex-shrink-0 mb-0.5"><Avatar size="sm" /></div>
-                  <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
-                    <span className="flex items-center gap-[5px]">
-                      {[0, 180, 360].map((delay) => (
-                        <span
-                          key={delay}
-                          className="w-2 h-2 rounded-full bg-gray-400 animate-dot-bounce"
-                          style={{ animationDelay: `${delay}ms` }}
-                        />
-                      ))}
-                    </span>
+                  <div className="relative bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                    <BubbleTail />
+                    <TypingDots size="lg" />
                   </div>
                 </div>
               )}
 
-              {/* Message bubble — revealed after typing dots */}
+              {/* Phase 2: typing text bubble */}
               {showBubble && (
                 <div className="flex items-end gap-1.5 mb-2.5">
                   <div className="flex-shrink-0 mb-0.5"><Avatar size="sm" /></div>
                   <div className="relative bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm max-w-[200px]">
-                    {/* Bubble tail */}
-                    <div
-                      className="absolute -left-[6px] bottom-[6px] w-0 h-0"
-                      style={{
-                        borderRight: '8px solid white',
-                        borderTop: '6px solid transparent',
-                        borderBottom: '0px solid transparent',
-                      }}
-                    />
-                    <p className="text-[11px] font-bold text-[#075e54] mb-0.5 leading-none">
-                      SOK Law
+                    <BubbleTail />
+                    <p className="text-[11px] font-bold text-[#075e54] mb-1 leading-none">SOK Law</p>
+
+                    {/* Heading types out */}
+                    <p className="text-[12px] text-gray-800 leading-snug font-medium min-h-[16px]">
+                      {displayHeading}
+                      {!headingDone && <Cursor height="13px" />}
                     </p>
-                    {/* Typing effect text */}
-                    <p className="text-[12px] text-gray-800 leading-snug font-medium">
-                      {displayHeading}{!isDone && newlineIdx === -1 && <Cursor />}
-                    </p>
+
+                    {/* Body only renders once '\n' is reached mid-type */}
                     {displayBody && (
-                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                        {displayBody}{!isDone && <Cursor />}
+                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5 min-h-[14px]">
+                        {displayBody}
+                        {!isDone && <Cursor height="11px" />}
                       </p>
                     )}
-                    {/* Timestamp + ticks — only show when done */}
+
+                    {/* Timestamp + ticks appear only when fully typed */}
                     {isDone && (
                       <div className="flex items-center justify-end gap-1 mt-1.5">
                         <span className="text-[10px] text-gray-400">
                           {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
-                        <svg viewBox="0 0 16 11" className="w-4 h-3 text-[#53bdeb]" fill="currentColor">
-                          <path d="M11.071.653a.56.56 0 0 0-.812 0L4.99 6.124 2.741 3.875a.56.56 0 0 0-.812.812L4.584 7.34a.56.56 0 0 0 .812 0l5.675-5.675a.56.56 0 0 0 0-.812zm2.3 0a.56.56 0 0 0-.812 0L7.29 5.918l-.5-.5a.56.56 0 0 0-.812.812l.9.9a.56.56 0 0 0 .812 0L13.37 1.465a.56.56 0 0 0 0-.812z" />
-                        </svg>
+                        <DoubleTick />
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Fake reply bar */}
+              {/* Fake input bar */}
               <button
                 onClick={() => { setOpen(true); setShowTeaser(false); }}
                 className="w-full flex items-center gap-2 bg-white rounded-full px-3 py-2 shadow-sm border border-gray-200/60 hover:shadow-md transition-all duration-200 group"
@@ -359,13 +356,10 @@ const WhatsAppButton = () => {
             </div>
           </div>
 
-          {/* Outer bubble tail */}
+          {/* Outer tail matches wallpaper */}
           <div
             className="absolute -bottom-[9px] right-5 w-0 h-0"
-            style={{
-              borderLeft: '9px solid transparent',
-              borderTop: '9px solid #e5ddd5',
-            }}
+            style={{ borderLeft: '9px solid transparent', borderTop: '9px solid #e5ddd5' }}
           />
         </div>
       )}
@@ -385,31 +379,18 @@ const WhatsAppButton = () => {
             </div>
             <button onClick={() => setOpen(false)}
               className="text-white/50 hover:text-white transition-colors flex-shrink-0"
-              aria-label="Close chat">
+              aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
-          <div
-            className="px-4 py-4 flex flex-col gap-2"
-            style={{
-              background: '#e5ddd5',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='0.03'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-          >
+          <div className="px-4 py-4 flex flex-col gap-2" style={WA_WALLPAPER}>
             <div className="flex items-end gap-1.5 max-w-[88%]">
               <div className="flex-shrink-0 mb-0.5"><Avatar size="sm" /></div>
               <div className="relative bg-white rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm">
-                <div
-                  className="absolute -left-[6px] bottom-[6px] w-0 h-0"
-                  style={{
-                    borderRight: '8px solid white',
-                    borderTop: '6px solid transparent',
-                    borderBottom: '0px solid transparent',
-                  }}
-                />
+                <BubbleTail />
                 <p className="text-[11px] font-bold text-[#075e54] mb-0.5">SOK Law</p>
                 <p className="text-xs text-gray-700 leading-relaxed">
                   👋 Hello! Welcome to{' '}
@@ -420,9 +401,7 @@ const WhatsAppButton = () => {
                   <span className="text-[10px] text-gray-400">
                     {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  <svg viewBox="0 0 16 11" className="w-4 h-3 text-[#53bdeb]" fill="currentColor">
-                    <path d="M11.071.653a.56.56 0 0 0-.812 0L4.99 6.124 2.741 3.875a.56.56 0 0 0-.812.812L4.584 7.34a.56.56 0 0 0 .812 0l5.675-5.675a.56.56 0 0 0 0-.812zm2.3 0a.56.56 0 0 0-.812 0L7.29 5.918l-.5-.5a.56.56 0 0 0-.812.812l.9.9a.56.56 0 0 0 .812 0L13.37 1.465a.56.56 0 0 0 0-.812z" />
-                  </svg>
+                  <DoubleTick />
                 </div>
               </div>
             </div>
@@ -446,7 +425,7 @@ const WhatsAppButton = () => {
               className="flex-1 resize-none rounded-3xl border-0 bg-white px-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#25d366]/30 transition-all leading-5 max-h-24 overflow-y-auto shadow-sm"
               style={{ scrollbarWidth: 'none' }}
             />
-            <button onClick={handleSend} aria-label="Send message"
+            <button onClick={handleSend} aria-label="Send"
               className="flex-shrink-0 w-9 h-9 rounded-full bg-[#25d366] hover:bg-[#1ebe5d] text-white flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 active:scale-95">
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 translate-x-0.5">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
