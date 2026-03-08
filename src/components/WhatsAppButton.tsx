@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-const PROFILE_IMAGE = '/images/support-avatar.jpg';
+const PROFILE_IMAGE = 'https://soklaw.co.ke/images/logo.png';
 
 const ROUTE_MESSAGES: Record<string, { heading: string; body: string }[]> = {
   '/': [
