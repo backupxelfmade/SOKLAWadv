@@ -712,7 +712,6 @@ html {
     min-height: 40px;
   }
   
-  /* Navbar adjustments for very small screens */
   .navbar-logo {
     height: 1rem;
   }
@@ -738,7 +737,6 @@ html {
     min-height: 44px;
   }
   
-  /* Navbar adjustments for very small screens */
   .navbar-logo {
     height: 1.5rem;
   }
@@ -1060,7 +1058,6 @@ html {
     transform: none;
   }
   
-  /* Improve touch targets */
   .btn-primary,
   .btn-secondary,
   .btn-outline {
@@ -1068,7 +1065,6 @@ html {
     min-width: 44px;
   }
   
-  /* Carousel navigation for touch */
   .carousel-click-area {
     min-height: 44px;
   }
@@ -1126,6 +1122,7 @@ html {
     color: black !important;
   }
 }
+
 /* Blog post content styling */
 .prose {
   color: var(--brand-gray);
@@ -1174,6 +1171,7 @@ html {
 .prose li {
   margin-bottom: 0.5rem;
 }
+
 /* Responsive design for blog posts */
 @media (min-width: 768px) {
   #bh-posts {
@@ -1380,4 +1378,19 @@ html {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════
+   MOBILE ZOOM FIX — added for WhatsApp button
+   Prevents iOS Safari auto-zoom on tap and input focus
+   ══════════════════════════════════════ */
+
+/* Disable double-tap zoom on all interactive elements site-wide */
+button, input, textarea, select, a {
+  touch-action: manipulation;
+}
+
+/* Prevent iOS keyboard zoom — triggers when font-size < 16px on focus */
+input, textarea, select {
+  font-size: 16px !important;
 }
