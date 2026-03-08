@@ -2,72 +2,67 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 const PROFILE_IMAGE = '/images/support-avatar.jpg';
 
-// ── Message pool per route ──
-// Multiple messages per route so repeat check-ins feel fresh
 const ROUTE_MESSAGES: Record<string, { heading: string; body: string }[]> = {
   '/': [
-    { heading: "Welcome to SOK Law 👋",          body: "Feel free to ask us anything — we're here to help." },
-    { heading: "Still exploring?",                body: "Our team is online if you have any questions." },
-    { heading: "Need legal guidance?",            body: "We're just a message away whenever you're ready." },
+    { heading: "Welcome to SOK Law 👋",             body: "Feel free to ask us anything — we're here to help." },
+    { heading: "Still exploring?",                   body: "Our team is online if you have any questions." },
+    { heading: "Need legal guidance?",               body: "We're just a message away whenever you're ready." },
   ],
   '#about': [
-    { heading: "Getting to know us?",             body: "We'd love to tell you more about our firm directly." },
-    { heading: "Have any questions about us?",    body: "Our team is happy to chat." },
+    { heading: "Getting to know us?",                body: "We'd love to tell you more about our firm directly." },
+    { heading: "Have any questions about us?",       body: "Our team is happy to chat." },
   ],
   '/services': [
-    { heading: "Looking for the right service?",  body: "We can help figure out what fits your situation." },
-    { heading: "Not sure where to start?",        body: "Just send us a message — no commitment needed." },
-    { heading: "Seen something relevant?",        body: "Our advocates can walk you through any of our services." },
+    { heading: "Looking for the right service?",     body: "We can help figure out what fits your situation." },
+    { heading: "Not sure where to start?",           body: "Just send us a message — no commitment needed." },
+    { heading: "Seen something relevant?",           body: "Our advocates can walk you through any of our services." },
   ],
   '/team': [
-    { heading: "Want to speak to someone?",       body: "We'll connect you with the right advocate." },
-    { heading: "Have a question for our team?",   body: "Reach out — we're happy to help." },
+    { heading: "Want to speak to someone?",          body: "We'll connect you with the right advocate." },
+    { heading: "Have a question for our team?",      body: "Reach out — we're happy to help." },
   ],
   '/gallery': [
-    { heading: "Curious about our work?",         body: "We're available if you'd like to know more." },
-    { heading: "Got questions about what you see?", body: "Just ask — we're right here." },
+    { heading: "Curious about our work?",            body: "We're available if you'd like to know more." },
+    { heading: "Got questions about what you see?",  body: "Just ask — we're right here." },
   ],
   '/careers': [
-    { heading: "Interested in joining us?",       body: "Chat with us about opportunities at SOK Law." },
-    { heading: "Want to know more about a role?", body: "We're happy to answer any questions." },
+    { heading: "Interested in joining us?",          body: "Chat with us about opportunities at SOK Law." },
+    { heading: "Want to know more about a role?",    body: "We're happy to answer any questions." },
   ],
   '/blog': [
-    { heading: "Have a related legal question?",  body: "We're happy to help with anything you're reading about." },
-    { heading: "Found this useful?",              body: "If you need legal advice, our team is here." },
+    { heading: "Have a related legal question?",     body: "We're happy to help with anything you're reading about." },
+    { heading: "Found this useful?",                 body: "If you need legal advice, our team is here." },
   ],
   '/contact': [
-    { heading: "Prefer a faster reply?",          body: "WhatsApp us directly — we typically respond right away." },
+    { heading: "Prefer a faster reply?",             body: "WhatsApp us directly — we typically respond right away." },
   ],
 };
 
-// Milestone-based scroll messages — shown at specific scroll depths
 const SCROLL_MILESTONES: { pct: number; heading: string; body: string }[] = [
-  { pct: 0.30, heading: "Reading through?",        body: "Let us know if anything catches your eye." },
-  { pct: 0.60, heading: "Still with us? 😊",        body: "We're here if you'd like to talk through anything." },
-  { pct: 0.90, heading: "Reached the bottom!",      body: "Didn't find what you needed? Just ask us directly." },
+  { pct: 0.30, heading: "Reading through?",     body: "Let us know if anything catches your eye." },
+  { pct: 0.60, heading: "Still with us? 😊",    body: "We're here if you'd like to talk through anything." },
+  { pct: 0.90, heading: "Reached the bottom!",  body: "Didn't find what you needed? Just ask us directly." },
 ];
 
 const WhatsAppButton = () => {
-  const [open, setOpen]               = useState(false);
-  const [message, setMessage]         = useState('');
-  const [showTeaser, setShowTeaser]   = useState(false);
-  const [teaser, setTeaser]           = useState<{ heading: string; body: string } | null>(null);
-  const [imgError, setImgError]       = useState(false);
-  const textareaRef                   = useRef<HTMLTextAreaElement>(null);
+  const [open, setOpen]             = useState(false);
+  const [message, setMessage]       = useState('');
+  const [showTeaser, setShowTeaser] = useState(false);
+  const [teaser, setTeaser]         = useState<{ heading: string; body: string } | null>(null);
+  const [imgError, setImgError]     = useState(false);
+  const textareaRef                 = useRef<HTMLTextAreaElement>(null);
 
-  // Tracking refs
-  const hideTimer                     = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const checkInTimer                  = useRef<ReturnType<typeof setInterval> | null>(null);
-  const messageIndex                  = useRef(0);       // cycles through route messages
-  const checkInCount                  = useRef(0);       // total check-ins shown this session
-  const shownMilestones               = useRef<Set<number>>(new Set());
-  const lastScrollY                   = useRef(0);
-  const scrollActive                  = useRef(false);   // true when user is actively scrolling
-  const scrollTimeout                 = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const checkInTimer   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollTimeout  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const messageIndex   = useRef(0);
+  const checkInCount   = useRef(0);
+  const shownMilestones = useRef<Set<number>>(new Set());
+  const lastScrollY    = useRef(0);
 
   const phoneNumber    = '+254720738641';
   const defaultMessage = 'Hello, I would like to inquire about your legal services.';
-  const MAX_CHECKINS   = 3; // never show more than 3 popups per session
+  const MAX_CHECKINS   = 3;
 
   const getRouteMessages = useCallback((): { heading: string; body: string }[] => {
     const path = window.location.pathname;
@@ -76,22 +71,17 @@ const WhatsAppButton = () => {
     return ROUTE_MESSAGES[path] ?? ROUTE_MESSAGES['/'];
   }, []);
 
-  // ── Display teaser ──
   const showMsg = useCallback((msg: { heading: string; body: string }, duration = 8000) => {
     if (open) return;
     if (checkInCount.current >= MAX_CHECKINS) return;
-
-    // Clear any existing auto-hide
     if (hideTimer.current) clearTimeout(hideTimer.current);
-
     checkInCount.current += 1;
     setTeaser(msg);
     setShowTeaser(true);
-
     hideTimer.current = setTimeout(() => setShowTeaser(false), duration);
   }, [open]);
 
-  // ── Trigger 1: First load — 2s warm welcome ──
+  // Trigger 1: First load
   useEffect(() => {
     const t = setTimeout(() => {
       const msgs = getRouteMessages();
@@ -101,32 +91,25 @@ const WhatsAppButton = () => {
     return () => clearTimeout(t);
   }, [showMsg, getRouteMessages]);
 
-  // ── Trigger 2: Scroll milestones ──
+  // Trigger 2: Scroll milestones
   useEffect(() => {
     const onScroll = () => {
       const pct = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
-
       for (const milestone of SCROLL_MILESTONES) {
         if (pct >= milestone.pct && !shownMilestones.current.has(milestone.pct)) {
           shownMilestones.current.add(milestone.pct);
-          // Small delay so it doesn't fire mid-scroll
           setTimeout(() => showMsg({ heading: milestone.heading, body: milestone.body }, 8000), 800);
         }
       }
-
-      // Track scroll activity
       lastScrollY.current = window.scrollY;
-      scrollActive.current = true;
       if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-      scrollTimeout.current = setTimeout(() => { scrollActive.current = false; }, 1500);
+      scrollTimeout.current = setTimeout(() => {}, 1500);
     };
-
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, [showMsg]);
 
-  // ── Trigger 3: Periodic check-ins every 40s while user is on page ──
-  // Only fires if user has scrolled at least a little (engaged, not AFK)
+  // Trigger 3: Periodic check-ins every 40s
   useEffect(() => {
     checkInTimer.current = setInterval(() => {
       if (open) return;
@@ -134,7 +117,6 @@ const WhatsAppButton = () => {
         if (checkInTimer.current) clearInterval(checkInTimer.current);
         return;
       }
-      // Only check in if user has scrolled since last check-in
       if (lastScrollY.current > 100) {
         const msgs = getRouteMessages();
         const idx  = messageIndex.current % msgs.length;
@@ -142,11 +124,9 @@ const WhatsAppButton = () => {
         messageIndex.current += 1;
       }
     }, 40000);
-
     return () => { if (checkInTimer.current) clearInterval(checkInTimer.current); };
   }, [open, showMsg, getRouteMessages]);
 
-  // Close teaser when chat opens
   useEffect(() => {
     if (open) {
       setShowTeaser(false);
@@ -158,9 +138,8 @@ const WhatsAppButton = () => {
     if (open && textareaRef.current) textareaRef.current.focus();
   }, [open]);
 
-  // Cleanup
   useEffect(() => () => {
-    if (hideTimer.current)   clearTimeout(hideTimer.current);
+    if (hideTimer.current)    clearTimeout(hideTimer.current);
     if (checkInTimer.current) clearInterval(checkInTimer.current);
     if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
   }, []);
@@ -198,28 +177,10 @@ const WhatsAppButton = () => {
 
   return (
     <>
-      <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(12px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes teaserIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes teaserOut {
-          from { opacity: 1; transform: translateY(0); }
-          to   { opacity: 0; transform: translateY(6px); }
-        }
-        .wa-chatbox { animation: fadeInUp 0.25s ease-out; }
-        .wa-teaser  { animation: teaserIn 0.3s ease-out forwards; }
-      `}</style>
-
       {/* ── Teaser Popup ── */}
       {showTeaser && !open && teaser && (
-        <div className="wa-teaser fixed bottom-[88px] right-4 sm:right-6 z-50 w-64">
-          <div className="relative bg-white rounded-2xl rounded-br-sm overflow-hidden
-            shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100">
+        <div className="animate-teaser-in fixed bottom-[88px] right-4 sm:right-6 z-50 w-64">
+          <div className="relative bg-white rounded-2xl rounded-br-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100">
 
             {/* Top green bar */}
             <div className="h-[3px] w-full bg-[#25d366]" />
@@ -229,22 +190,19 @@ const WhatsAppButton = () => {
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="relative flex-shrink-0">
                   <Avatar size="lg" />
-                  {/* Online ring */}
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#25d366] border-2 border-white" />
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="text-[11px] font-bold text-gray-800 truncate">SOK Law</p>
-                    {/* Typing indicator dots */}
-                    <span className="flex items-center gap-[3px] ml-0.5">
+                    {/* Typing dots — using Tailwind animate-dot-bounce */}
+                    <span className="flex items-center gap-[3px]">
                       {[0, 150, 300].map((delay) => (
                         <span
                           key={delay}
-                          className="w-1 h-1 rounded-full bg-[#25d366]"
-                          style={{
-                            animation: `bounce 1s ${delay}ms infinite`,
-                          }}
+                          className="w-1 h-1 rounded-full bg-[#25d366] animate-dot-bounce"
+                          style={{ animationDelay: `${delay}ms` }}
                         />
                       ))}
                     </span>
@@ -285,20 +243,15 @@ const WhatsAppButton = () => {
             </div>
 
             {/* Bubble tail */}
-            <div className="absolute -bottom-[9px] right-5 w-0 h-0
-              border-l-[9px] border-l-transparent
-              border-t-[9px] border-t-white" />
-            <div className="absolute -bottom-[11px] right-[19px] w-0 h-0
-              border-l-[10px] border-l-transparent
-              border-t-[10px] border-t-gray-100"
-              style={{ zIndex: -1 }} />
+            <div className="absolute -bottom-[9px] right-5 w-0 h-0 border-l-[9px] border-l-transparent border-t-[9px] border-t-white" />
+            <div className="absolute -bottom-[11px] right-[19px] w-0 h-0 border-l-[10px] border-l-transparent border-t-[10px] border-t-gray-100" style={{ zIndex: -1 }} />
           </div>
         </div>
       )}
 
       {/* ── Chatbox ── */}
       {open && (
-        <div className="wa-chatbox fixed bottom-[88px] right-4 sm:right-6 z-50 w-[300px] sm:w-[320px] rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.18)] overflow-hidden flex flex-col">
+        <div className="animate-fade-in-up fixed bottom-[88px] right-4 sm:right-6 z-50 w-[300px] sm:w-[320px] rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.18)] overflow-hidden flex flex-col">
           <div className="bg-[#075e54] px-4 py-3 flex items-center gap-3">
             <div className="relative flex-shrink-0">
               <Avatar size="md" />
