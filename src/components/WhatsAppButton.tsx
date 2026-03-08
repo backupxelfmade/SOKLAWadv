@@ -4,65 +4,102 @@ const PROFILE_IMAGE = '/images/support-avatar.jpg';
 
 const ROUTE_MESSAGES: Record<string, { heading: string; body: string }[]> = {
   '/': [
-    { heading: "Welcome to SOK Law 👋",             body: "Feel free to ask us anything — we're here to help." },
-    { heading: "Still exploring?",                   body: "Our team is online if you have any questions." },
-    { heading: "Need legal guidance?",               body: "We're just a message away whenever you're ready." },
+    { heading: "Welcome to SOK Law 👋",            body: "Feel free to ask us anything — we're here to help." },
+    { heading: "Still exploring?",                  body: "Our team is online if you have any questions." },
+    { heading: "Need legal guidance?",              body: "We're just a message away whenever you're ready." },
   ],
   '#about': [
-    { heading: "Getting to know us?",                body: "We'd love to tell you more about our firm directly." },
-    { heading: "Have any questions about us?",       body: "Our team is happy to chat." },
+    { heading: "Getting to know us?",               body: "We'd love to tell you more about our firm directly." },
+    { heading: "Have any questions about us?",      body: "Our team is happy to chat." },
   ],
   '/services': [
-    { heading: "Looking for the right service?",     body: "We can help figure out what fits your situation." },
-    { heading: "Not sure where to start?",           body: "Just send us a message — no commitment needed." },
-    { heading: "Seen something relevant?",           body: "Our advocates can walk you through any of our services." },
+    { heading: "Looking for the right service?",    body: "We can help figure out what fits your situation." },
+    { heading: "Not sure where to start?",          body: "Just send us a message — no commitment needed." },
+    { heading: "Seen something relevant?",          body: "Our advocates can walk you through any of our services." },
   ],
   '/team': [
-    { heading: "Want to speak to someone?",          body: "We'll connect you with the right advocate." },
-    { heading: "Have a question for our team?",      body: "Reach out — we're happy to help." },
+    { heading: "Want to speak to someone?",         body: "We'll connect you with the right advocate." },
+    { heading: "Have a question for our team?",     body: "Reach out — we're happy to help." },
   ],
   '/gallery': [
-    { heading: "Curious about our work?",            body: "We're available if you'd like to know more." },
-    { heading: "Got questions about what you see?",  body: "Just ask — we're right here." },
+    { heading: "Curious about our work?",           body: "We're available if you'd like to know more." },
+    { heading: "Got questions about what you see?", body: "Just ask — we're right here." },
   ],
   '/careers': [
-    { heading: "Interested in joining us?",          body: "Chat with us about opportunities at SOK Law." },
-    { heading: "Want to know more about a role?",    body: "We're happy to answer any questions." },
+    { heading: "Interested in joining us?",         body: "Chat with us about opportunities at SOK Law." },
+    { heading: "Want to know more about a role?",   body: "We're happy to answer any questions." },
   ],
   '/blog': [
-    { heading: "Have a related legal question?",     body: "We're happy to help with anything you're reading about." },
-    { heading: "Found this useful?",                 body: "If you need legal advice, our team is here." },
+    { heading: "Have a related legal question?",    body: "We're happy to help with anything you're reading about." },
+    { heading: "Found this useful?",                body: "If you need legal advice, our team is here." },
   ],
   '/contact': [
-    { heading: "Prefer a faster reply?",             body: "WhatsApp us directly — we typically respond right away." },
+    { heading: "Prefer a faster reply?",            body: "WhatsApp us directly — we typically respond right away." },
   ],
 };
 
 const SCROLL_MILESTONES: { pct: number; heading: string; body: string }[] = [
-  { pct: 0.30, heading: "Reading through?",     body: "Let us know if anything catches your eye." },
-  { pct: 0.60, heading: "Still with us? 😊",    body: "We're here if you'd like to talk through anything." },
-  { pct: 0.90, heading: "Reached the bottom!",  body: "Didn't find what you needed? Just ask us directly." },
+  { pct: 0.30, heading: "Reading through?",    body: "Let us know if anything catches your eye." },
+  { pct: 0.60, heading: "Still with us? 😊",   body: "We're here if you'd like to talk through anything." },
+  { pct: 0.90, heading: "Reached the bottom!", body: "Didn't find what you needed? Just ask us directly." },
 ];
 
-const WhatsAppButton = () => {
-  const [open, setOpen]             = useState(false);
-  const [message, setMessage]       = useState('');
-  const [showTeaser, setShowTeaser] = useState(false);
-  const [teaser, setTeaser]         = useState<{ heading: string; body: string } | null>(null);
-  const [imgError, setImgError]     = useState(false);
-  const textareaRef                 = useRef<HTMLTextAreaElement>(null);
+// ── Typing animation hook ──
+// Simulates the message being typed out character by character
+const useTypingEffect = (
+  text: string,
+  enabled: boolean,
+  typingSpeed = 28
+) => {
+  const [displayed, setDisplayed] = useState('');
+  const [isDone, setIsDone]       = useState(false);
 
-  const hideTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const checkInTimer   = useRef<ReturnType<typeof setInterval> | null>(null);
-  const scrollTimeout  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const messageIndex   = useRef(0);
-  const checkInCount   = useRef(0);
+  useEffect(() => {
+    if (!enabled) { setDisplayed(text); setIsDone(true); return; }
+    setDisplayed('');
+    setIsDone(false);
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) { clearInterval(interval); setIsDone(true); }
+    }, typingSpeed);
+    return () => clearInterval(interval);
+  }, [text, enabled, typingSpeed]);
+
+  return { displayed, isDone };
+};
+
+const WhatsAppButton = () => {
+  const [open, setOpen]               = useState(false);
+  const [message, setMessage]         = useState('');
+  const [showTeaser, setShowTeaser]   = useState(false);
+  const [teaser, setTeaser]           = useState<{ heading: string; body: string } | null>(null);
+  const [isTyping, setIsTyping]       = useState(false);   // shows dots before message appears
+  const [showBubble, setShowBubble]   = useState(false);   // shows the actual bubble
+  const [imgError, setImgError]       = useState(false);
+  const textareaRef                   = useRef<HTMLTextAreaElement>(null);
+
+  const hideTimer       = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const checkInTimer    = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollTimeout   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const messageIndex    = useRef(0);
+  const checkInCount    = useRef(0);
   const shownMilestones = useRef<Set<number>>(new Set());
-  const lastScrollY    = useRef(0);
+  const lastScrollY     = useRef(0);
 
   const phoneNumber    = '+254720738641';
   const defaultMessage = 'Hello, I would like to inquire about your legal services.';
   const MAX_CHECKINS   = 3;
+
+  // Full message = heading + body combined for typing effect
+  const fullTeaserText = teaser ? `${teaser.heading}\n${teaser.body}` : '';
+  const { displayed, isDone } = useTypingEffect(fullTeaserText, showBubble, 25);
+
+  // Split displayed text back into heading/body for rendering
+  const newlineIdx      = displayed.indexOf('\n');
+  const displayHeading  = newlineIdx === -1 ? displayed : displayed.slice(0, newlineIdx);
+  const displayBody     = newlineIdx === -1 ? '' : displayed.slice(newlineIdx + 1);
 
   const getRouteMessages = useCallback((): { heading: string; body: string }[] => {
     const path = window.location.pathname;
@@ -71,13 +108,23 @@ const WhatsAppButton = () => {
     return ROUTE_MESSAGES[path] ?? ROUTE_MESSAGES['/'];
   }, []);
 
-  const showMsg = useCallback((msg: { heading: string; body: string }, duration = 8000) => {
+  const showMsg = useCallback((msg: { heading: string; body: string }, duration = 9000) => {
     if (open) return;
     if (checkInCount.current >= MAX_CHECKINS) return;
     if (hideTimer.current) clearTimeout(hideTimer.current);
+
     checkInCount.current += 1;
     setTeaser(msg);
+    setIsTyping(true);
+    setShowBubble(false);
     setShowTeaser(true);
+
+    // Show typing dots for 1.5s, then reveal bubble with typing effect
+    setTimeout(() => {
+      setIsTyping(false);
+      setShowBubble(true);
+    }, 1500);
+
     hideTimer.current = setTimeout(() => setShowTeaser(false), duration);
   }, [open]);
 
@@ -85,7 +132,7 @@ const WhatsAppButton = () => {
   useEffect(() => {
     const t = setTimeout(() => {
       const msgs = getRouteMessages();
-      showMsg(msgs[0], 7000);
+      showMsg(msgs[0], 9000);
       messageIndex.current = 1;
     }, 2000);
     return () => clearTimeout(t);
@@ -98,7 +145,7 @@ const WhatsAppButton = () => {
       for (const milestone of SCROLL_MILESTONES) {
         if (pct >= milestone.pct && !shownMilestones.current.has(milestone.pct)) {
           shownMilestones.current.add(milestone.pct);
-          setTimeout(() => showMsg({ heading: milestone.heading, body: milestone.body }, 8000), 800);
+          setTimeout(() => showMsg({ heading: milestone.heading, body: milestone.body }), 800);
         }
       }
       lastScrollY.current = window.scrollY;
@@ -120,7 +167,7 @@ const WhatsAppButton = () => {
       if (lastScrollY.current > 100) {
         const msgs = getRouteMessages();
         const idx  = messageIndex.current % msgs.length;
-        showMsg(msgs[idx], 8000);
+        showMsg(msgs[idx]);
         messageIndex.current += 1;
       }
     }, 40000);
@@ -130,6 +177,8 @@ const WhatsAppButton = () => {
   useEffect(() => {
     if (open) {
       setShowTeaser(false);
+      setIsTyping(false);
+      setShowBubble(false);
       if (hideTimer.current) clearTimeout(hideTimer.current);
     }
   }, [open]);
@@ -139,8 +188,8 @@ const WhatsAppButton = () => {
   }, [open]);
 
   useEffect(() => () => {
-    if (hideTimer.current)    clearTimeout(hideTimer.current);
-    if (checkInTimer.current) clearInterval(checkInTimer.current);
+    if (hideTimer.current)     clearTimeout(hideTimer.current);
+    if (checkInTimer.current)  clearInterval(checkInTimer.current);
     if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
   }, []);
 
@@ -175,83 +224,156 @@ const WhatsAppButton = () => {
     );
   };
 
+  // Blinking cursor shown while typing effect is in progress
+  const Cursor = () => (
+    <span className="inline-block w-[2px] h-[12px] bg-gray-600 ml-[1px] align-middle animate-pulse" />
+  );
+
   return (
     <>
       {/* ── Teaser Popup ── */}
-      {showTeaser && !open && teaser && (
-        <div className="animate-teaser-in fixed bottom-[88px] right-4 sm:right-6 z-50 w-64">
-          <div className="relative bg-white rounded-2xl rounded-br-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100">
+      {showTeaser && !open && (
+        <div className="animate-teaser-in fixed bottom-[88px] right-4 sm:right-6 z-50 w-[272px]">
+          <div className="relative rounded-2xl rounded-br-sm overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.18)]">
 
-            {/* Top green bar */}
-            <div className="h-[3px] w-full bg-[#25d366]" />
+            {/* WhatsApp dark header */}
+            <div className="bg-[#075e54] px-3.5 py-3 flex items-center gap-2.5">
+              <div className="relative flex-shrink-0">
+                <Avatar size="lg" />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#25d366] border-2 border-[#075e54]" />
+              </div>
 
-            <div className="p-3.5">
-              {/* Header row */}
-              <div className="flex items-center gap-2.5 mb-3">
-                <div className="relative flex-shrink-0">
-                  <Avatar size="lg" />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#25d366] border-2 border-white" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-[11px] font-bold text-gray-800 truncate">SOK Law</p>
-                    {/* Typing dots — using Tailwind animate-dot-bounce */}
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-[13px] font-semibold leading-tight">SOK Law</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  {/* Always show typing dots — either pre-bubble or during typing */}
+                  {(isTyping || !isDone) && (
                     <span className="flex items-center gap-[3px]">
                       {[0, 150, 300].map((delay) => (
                         <span
                           key={delay}
-                          className="w-1 h-1 rounded-full bg-[#25d366] animate-dot-bounce"
+                          className="w-[5px] h-[5px] rounded-full bg-[#25d366] animate-dot-bounce"
+                          style={{ animationDelay: `${delay}ms` }}
+                        />
+                      ))}
+                    </span>
+                  )}
+                  <span className="text-white/60 text-[10px]">
+                    {isTyping ? 'typing...' : isDone ? 'online' : 'typing...'}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowTeaser(false)}
+                className="text-white/50 hover:text-white/90 transition-colors flex-shrink-0 p-1"
+                aria-label="Dismiss"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* WhatsApp wallpaper body */}
+            <div
+              className="px-3 pt-3 pb-2.5"
+              style={{
+                background: '#e5ddd5',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='0.03'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              }}
+            >
+              {/* Typing bubble — shown before message appears */}
+              {isTyping && (
+                <div className="flex items-end gap-1.5 mb-2">
+                  <div className="flex-shrink-0 mb-0.5"><Avatar size="sm" /></div>
+                  <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                    <span className="flex items-center gap-[5px]">
+                      {[0, 180, 360].map((delay) => (
+                        <span
+                          key={delay}
+                          className="w-2 h-2 rounded-full bg-gray-400 animate-dot-bounce"
                           style={{ animationDelay: `${delay}ms` }}
                         />
                       ))}
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#25d366] font-medium">● Online now</p>
                 </div>
+              )}
 
-                {/* Dismiss */}
-                <button
-                  onClick={() => setShowTeaser(false)}
-                  className="text-gray-300 hover:text-gray-400 transition-colors flex-shrink-0 self-start"
-                  aria-label="Dismiss"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+              {/* Message bubble — revealed after typing dots */}
+              {showBubble && (
+                <div className="flex items-end gap-1.5 mb-2.5">
+                  <div className="flex-shrink-0 mb-0.5"><Avatar size="sm" /></div>
+                  <div className="relative bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm max-w-[200px]">
+                    {/* Bubble tail */}
+                    <div
+                      className="absolute -left-[6px] bottom-[6px] w-0 h-0"
+                      style={{
+                        borderRight: '8px solid white',
+                        borderTop: '6px solid transparent',
+                        borderBottom: '0px solid transparent',
+                      }}
+                    />
+                    <p className="text-[11px] font-bold text-[#075e54] mb-0.5 leading-none">
+                      SOK Law
+                    </p>
+                    {/* Typing effect text */}
+                    <p className="text-[12px] text-gray-800 leading-snug font-medium">
+                      {displayHeading}{!isDone && newlineIdx === -1 && <Cursor />}
+                    </p>
+                    {displayBody && (
+                      <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                        {displayBody}{!isDone && <Cursor />}
+                      </p>
+                    )}
+                    {/* Timestamp + ticks — only show when done */}
+                    {isDone && (
+                      <div className="flex items-center justify-end gap-1 mt-1.5">
+                        <span className="text-[10px] text-gray-400">
+                          {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <svg viewBox="0 0 16 11" className="w-4 h-3 text-[#53bdeb]" fill="currentColor">
+                          <path d="M11.071.653a.56.56 0 0 0-.812 0L4.99 6.124 2.741 3.875a.56.56 0 0 0-.812.812L4.584 7.34a.56.56 0 0 0 .812 0l5.675-5.675a.56.56 0 0 0 0-.812zm2.3 0a.56.56 0 0 0-.812 0L7.29 5.918l-.5-.5a.56.56 0 0 0-.812.812l.9.9a.56.56 0 0 0 .812 0L13.37 1.465a.56.56 0 0 0 0-.812z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
-              {/* Message bubble */}
-              <div className="bg-[#f0fdf4] border border-[#25d366]/15 rounded-xl rounded-tl-sm px-3 py-2.5 mb-3">
-                <p className="text-[11px] font-semibold text-gray-800 leading-snug mb-0.5">
-                  {teaser.heading}
-                </p>
-                <p className="text-[11px] text-gray-500 leading-relaxed">
-                  {teaser.body}
-                </p>
-              </div>
-
-              {/* CTA */}
+              {/* Fake reply bar */}
               <button
                 onClick={() => { setOpen(true); setShowTeaser(false); }}
-                className="w-full flex items-center justify-center gap-1.5 bg-[#25d366] hover:bg-[#1ebe5d] text-white text-[11px] font-semibold py-2 rounded-xl transition-colors duration-200"
+                className="w-full flex items-center gap-2 bg-white rounded-full px-3 py-2 shadow-sm border border-gray-200/60 hover:shadow-md transition-all duration-200 group"
               >
-                <WhatsAppIcon className="w-3.5 h-3.5" />
-                Reply on WhatsApp
+                <span className="text-[12px] text-gray-400 flex-1 text-left group-hover:text-gray-500 transition-colors">
+                  Type a message...
+                </span>
+                <span className="w-7 h-7 rounded-full bg-[#25d366] flex items-center justify-center flex-shrink-0 group-hover:bg-[#1ebe5d] transition-colors">
+                  <svg viewBox="0 0 24 24" fill="white" className="w-3.5 h-3.5 translate-x-0.5">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                  </svg>
+                </span>
               </button>
             </div>
-
-            {/* Bubble tail */}
-            <div className="absolute -bottom-[9px] right-5 w-0 h-0 border-l-[9px] border-l-transparent border-t-[9px] border-t-white" />
-            <div className="absolute -bottom-[11px] right-[19px] w-0 h-0 border-l-[10px] border-l-transparent border-t-[10px] border-t-gray-100" style={{ zIndex: -1 }} />
           </div>
+
+          {/* Outer bubble tail */}
+          <div
+            className="absolute -bottom-[9px] right-5 w-0 h-0"
+            style={{
+              borderLeft: '9px solid transparent',
+              borderTop: '9px solid #e5ddd5',
+            }}
+          />
         </div>
       )}
 
       {/* ── Chatbox ── */}
       {open && (
         <div className="animate-fade-in-up fixed bottom-[88px] right-4 sm:right-6 z-50 w-[300px] sm:w-[320px] rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.18)] overflow-hidden flex flex-col">
+
           <div className="bg-[#075e54] px-4 py-3 flex items-center gap-3">
             <div className="relative flex-shrink-0">
               <Avatar size="md" />
@@ -279,16 +401,29 @@ const WhatsAppButton = () => {
           >
             <div className="flex items-end gap-1.5 max-w-[88%]">
               <div className="flex-shrink-0 mb-0.5"><Avatar size="sm" /></div>
-              <div className="bg-white rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm">
+              <div className="relative bg-white rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm">
+                <div
+                  className="absolute -left-[6px] bottom-[6px] w-0 h-0"
+                  style={{
+                    borderRight: '8px solid white',
+                    borderTop: '6px solid transparent',
+                    borderBottom: '0px solid transparent',
+                  }}
+                />
                 <p className="text-[11px] font-bold text-[#075e54] mb-0.5">SOK Law</p>
                 <p className="text-xs text-gray-700 leading-relaxed">
                   👋 Hello! Welcome to{' '}
                   <span className="font-semibold">Simiyu, Opondo, Kiranga & Advocates</span>.
                   How can we assist you today?
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1 text-right">
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
+                <div className="flex items-center justify-end gap-1 mt-1.5">
+                  <span className="text-[10px] text-gray-400">
+                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <svg viewBox="0 0 16 11" className="w-4 h-3 text-[#53bdeb]" fill="currentColor">
+                    <path d="M11.071.653a.56.56 0 0 0-.812 0L4.99 6.124 2.741 3.875a.56.56 0 0 0-.812.812L4.584 7.34a.56.56 0 0 0 .812 0l5.675-5.675a.56.56 0 0 0 0-.812zm2.3 0a.56.56 0 0 0-.812 0L7.29 5.918l-.5-.5a.56.56 0 0 0-.812.812l.9.9a.56.56 0 0 0 .812 0L13.37 1.465a.56.56 0 0 0 0-.812z" />
+                  </svg>
+                </div>
               </div>
             </div>
 
