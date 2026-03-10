@@ -146,7 +146,7 @@ ${formData.message}
                     href="tel:+254700123456"
                     className="text-xs sm:text-sm text-[#4a4a4a] hover:text-[#bfa06f] transition-colors"
                   >
-                    +254 700 123 456
+                    +254 705 263 776
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
