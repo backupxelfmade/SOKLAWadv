@@ -104,4 +104,11 @@ async function main() {
   console.log(`✅ Saved ${posts.length} blog posts → public/data/blog-posts.json`);
 }
 
-main().catch((e) => { console.error('❌ Fetch failed:', e.message); process.exit(1); });
+// ── FIXED: exit 0 so build never fails due to Caisy errors ───────────────────
+main().catch(async (e) => {
+  console.error('❌ Caisy fetch failed:', e.message);
+  console.warn('⚠️  Writing empty JSON so build can continue...');
+  await mkdir('./public/data', { recursive: true });
+  await writeFile('./public/data/blog-posts.json', JSON.stringify([], null, 2));
+  process.exit(0); // ← KEY CHANGE: was process.exit(1)
+});
