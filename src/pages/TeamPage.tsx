@@ -8,25 +8,35 @@ import {
 import Footer from '../components/Footer';
 import { partners } from '../data/teamData';
 import { useTeam } from '../hooks/useSiteData';
+import { useAppData } from '../context/AppDataContext';
 
 const TeamPage = () => {
   const navigate = useNavigate();
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const { team: dynamicMembers, loading, error } = useTeam();
+  const { data } = useAppData();
 
   const membersToDisplay = dynamicMembers.length > 0 ? dynamicMembers : partners;
 
-  // ── Sort by display_order, then build category map ────────────────────────
+  // ── Sort members by display_order ─────────────────────────────────────────
   const sorted = [...membersToDisplay].sort(
     (a: any, b: any) => (a.display_order ?? 99) - (b.display_order ?? 99)
   );
 
+  // ── Build category → members map ──────────────────────────────────────────
   const teamByCategory: Record<string, any[]> = {};
   sorted.forEach((m: any) => {
     const key = m.category?.trim() || 'Team';
     if (!teamByCategory[key]) teamByCategory[key] = [];
     teamByCategory[key].push(m);
   });
+
+  // ── Order sections by team_categories.display_order from Supabase ─────────
+  const categoryOrder = (data?.teamCategories ?? []).map((c) => c.name);
+  const orderedCategories = [
+    ...categoryOrder.filter((name) => teamByCategory[name]),
+    ...Object.keys(teamByCategory).filter((k) => !categoryOrder.includes(k)),
+  ];
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
@@ -82,85 +92,89 @@ const TeamPage = () => {
             </div>
           ) : (
             <div className="space-y-10 sm:space-y-20">
-              {Object.entries(teamByCategory).map(([category, members]) => (
-                <section key={category}>
+              {orderedCategories.map((category) => {
+                const members = teamByCategory[category];
+                if (!members?.length) return null;
+                return (
+                  <section key={category}>
 
-                  {/* Category header */}
-                  <div className="flex items-center gap-3 sm:gap-4 mb-5 sm:mb-8">
-                    <div className="flex items-center gap-2">
-                      <span className="block h-px w-4 sm:w-6 bg-[#bfa06f] flex-shrink-0" />
-                      <h2 className="text-[0.65rem] sm:text-[0.75rem] font-semibold uppercase tracking-[0.18em] text-[#bfa06f]">
-                        {category}
-                      </h2>
+                    {/* Category header */}
+                    <div className="flex items-center gap-3 sm:gap-4 mb-5 sm:mb-8">
+                      <div className="flex items-center gap-2">
+                        <span className="block h-px w-4 sm:w-6 bg-[#bfa06f] flex-shrink-0" />
+                        <h2 className="text-[0.65rem] sm:text-[0.75rem] font-semibold uppercase tracking-[0.18em] text-[#bfa06f]">
+                          {category}
+                        </h2>
+                      </div>
+                      <span className="flex-1 h-px bg-[#e8e0d0]" />
+                      <span className="text-[0.55rem] sm:text-[0.65rem] text-[#aaa] font-medium">
+                        {members.length} {members.length === 1 ? 'member' : 'members'}
+                      </span>
                     </div>
-                    <span className="flex-1 h-px bg-[#e8e0d0]" />
-                    <span className="text-[0.55rem] sm:text-[0.65rem] text-[#aaa] font-medium">
-                      {members.length} {members.length === 1 ? 'member' : 'members'}
-                    </span>
-                  </div>
 
-                  {/* Cards grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
-                    {members.map((member: any) => (
-                      <div
-                        key={member.id}
-                        onClick={() => setSelectedMember(member)}
-                        className="group cursor-pointer bg-white border border-[#e8e0d0] rounded-xl sm:rounded-2xl overflow-hidden hover:border-[#bfa06f]/50 hover:shadow-md transition-all duration-300"
-                      >
-                        <div className="aspect-[3/4] overflow-hidden bg-[#f9f7f1]">
-                          <img
-                            src={member.image} alt={member.name} loading="lazy"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                        </div>
-                        <div className="p-2.5 sm:p-4">
-                          <div className="w-3 sm:w-4 h-0.5 bg-[#bfa06f] mb-1.5 sm:mb-2 transition-all duration-300 group-hover:w-5 sm:group-hover:w-6" />
-                          <h3 className="text-[0.65rem] sm:text-sm font-bold text-[#0d2340] leading-snug line-clamp-1">
-                            {member.name}
-                          </h3>
-                          <p className="text-[0.55rem] sm:text-xs text-[#bfa06f] font-semibold mt-0.5 line-clamp-1">
-                            {member.role}
-                          </p>
-                          <p className="text-[0.55rem] sm:text-xs text-[#6a6a6a] mt-1 line-clamp-2 leading-snug hidden sm:block">
-                            {member.specialization}
-                          </p>
-                          <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3">
-                            {member.email && (
-                              <a
-                                href={`mailto:${member.email}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#f9f7f1] hover:bg-[#bfa06f] text-[#bfa06f] hover:text-white transition-all"
-                              >
-                                <Mail className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />
-                              </a>
-                            )}
-                            {member.phone && (
-                              <a
-                                href={`tel:${member.phone}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#f9f7f1] hover:bg-[#bfa06f] text-[#bfa06f] hover:text-white transition-all"
-                              >
-                                <Phone className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />
-                              </a>
-                            )}
-                            {member.linkedin && (
-                              <a
-                                href={member.linkedin}
-                                target="_blank" rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#f9f7f1] hover:bg-[#bfa06f] text-[#bfa06f] hover:text-white transition-all"
-                              >
-                                <Linkedin className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />
-                              </a>
-                            )}
+                    {/* Cards grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
+                      {members.map((member: any) => (
+                        <div
+                          key={member.id}
+                          onClick={() => setSelectedMember(member)}
+                          className="group cursor-pointer bg-white border border-[#e8e0d0] rounded-xl sm:rounded-2xl overflow-hidden hover:border-[#bfa06f]/50 hover:shadow-md transition-all duration-300"
+                        >
+                          <div className="aspect-[3/4] overflow-hidden bg-[#f9f7f1]">
+                            <img
+                              src={member.image} alt={member.name} loading="lazy"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          </div>
+                          <div className="p-2.5 sm:p-4">
+                            <div className="w-3 sm:w-4 h-0.5 bg-[#bfa06f] mb-1.5 sm:mb-2 transition-all duration-300 group-hover:w-5 sm:group-hover:w-6" />
+                            <h3 className="text-[0.65rem] sm:text-sm font-bold text-[#0d2340] leading-snug line-clamp-1">
+                              {member.name}
+                            </h3>
+                            <p className="text-[0.55rem] sm:text-xs text-[#bfa06f] font-semibold mt-0.5 line-clamp-1">
+                              {member.role}
+                            </p>
+                            <p className="text-[0.55rem] sm:text-xs text-[#6a6a6a] mt-1 line-clamp-2 leading-snug hidden sm:block">
+                              {member.specialization}
+                            </p>
+                            <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3">
+                              {member.email && (
+                                <a
+                                  href={`mailto:${member.email}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#f9f7f1] hover:bg-[#bfa06f] text-[#bfa06f] hover:text-white transition-all"
+                                >
+                                  <Mail className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />
+                                </a>
+                              )}
+                              {member.phone && (
+                                <a
+                                  href={`tel:${member.phone}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#f9f7f1] hover:bg-[#bfa06f] text-[#bfa06f] hover:text-white transition-all"
+                                >
+                                  <Phone className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />
+                                </a>
+                              )}
+                              {member.linkedin && (
+                                <a
+                                  href={member.linkedin}
+                                  target="_blank" rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#f9f7f1] hover:bg-[#bfa06f] text-[#bfa06f] hover:text-white transition-all"
+                                >
+                                  <Linkedin className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
 
-                </section>
-              ))}
+                  </section>
+                );
+              })}
             </div>
           )}
         </div>
