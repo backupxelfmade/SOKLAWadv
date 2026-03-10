@@ -39,6 +39,12 @@ export type TeamMember = {
   display_order?: number;
 };
 
+export type TeamCategory = {
+  id: string;
+  name: string;
+  display_order: number;
+};
+
 export type Career = {
   id: string;
   title: string;
@@ -52,9 +58,10 @@ export type Career = {
 };
 
 type AppData = {
-  services: Service[];
-  team: TeamMember[];
-  careers: Career[];
+  services:       Service[];
+  team:           TeamMember[];
+  careers:        Career[];
+  teamCategories: TeamCategory[];
 };
 
 type AppDataContextType = {
@@ -68,7 +75,7 @@ type AppDataContextType = {
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
-const CACHE_KEY = 'site_data_v7';
+const CACHE_KEY = 'site_data_v8';   // ← bumped: picks up teamCategories
 const CACHE_TTL = 1000 * 60 * 60;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -113,7 +120,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      const [services, team, careers] = await Promise.all([
+      const [services, team, careers, teamCategories] = await Promise.all([
 
         supabase
           .from('legal_services')
@@ -143,11 +150,17 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             deadline
           `),
 
+        supabase
+          .from('team_categories')
+          .select('id, name, display_order')
+          .order('display_order', { ascending: true }),
+
       ]);
 
-      if (services.error) throw services.error;
-      if (team.error)     throw team.error;
-      if (careers.error)  throw careers.error;
+      if (services.error)       throw services.error;
+      if (team.error)           throw team.error;
+      if (careers.error)        throw careers.error;
+      if (teamCategories.error) throw teamCategories.error;
 
       const result: AppData = {
         services: (services.data ?? []).map((s) => ({
@@ -168,6 +181,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         })),
 
         careers: careers.data ?? [],
+
+        teamCategories: teamCategories.data ?? [],
       };
 
       setData(result);
