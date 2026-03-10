@@ -1,36 +1,42 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react'; // ← added useMemo
 import { useNavigate } from 'react-router-dom';
 import { Linkedin, Mail, Phone, Users, X, ArrowRight } from 'lucide-react';
 import { partners } from '../data/teamData';
-import { useTeamMembers } from '../hooks/useTeamMembers';
-import { useCategories } from '../hooks/useCategories';
+import { useTeam } from '../hooks/useSiteData';  // ← CHANGED (replaces both old hooks)
 
 const Team = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const [selectedPartner, setSelectedPartner] = useState<any>(null);
-  const { members: dynamicMembers, loading, error } = useTeamMembers();
-  const { categories } = useCategories();
 
-  const getTeamByCategory = (members: any[], categoryList: any[]) => {
-    const result: { [key: string]: any[] } = {};
-    categoryList.forEach((cat) => {
-      result[cat.name] = members.filter((m) => m.category === cat.name);
-    });
-    return result;
-  };
+  // ← CHANGED: single hook replaces useTeamMembers + useCategories
+  const { team: dynamicMembers, loading, error } = useTeam();
 
   const membersToDisplay = dynamicMembers.length > 0 ? dynamicMembers : partners;
-  const teamByCategory =
-    categories.length > 0
-      ? getTeamByCategory(membersToDisplay, categories)
-      : {
-          Partners: membersToDisplay.filter((m) => m.category === 'Partners'),
-          'Consulting Partners': membersToDisplay.filter((m) => m.category === 'Consulting Partners'),
-          Associates: membersToDisplay.filter((m) => m.category === 'Associates'),
-          'Administrative staff': membersToDisplay.filter((m) => m.category === 'Administrative staff'),
-          Assistants: membersToDisplay.filter((m) => m.category === 'Assistants'),
-        };
+
+  // ← CHANGED: categories derived from members — no separate hook needed
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    return membersToDisplay
+      .map((m) => m.category)
+      .filter((c): c is string => !!c && !seen.has(c) && seen.add(c) !== undefined);
+  }, [membersToDisplay]);
+
+  const teamByCategory = useMemo(() => {
+    const result: { [key: string]: any[] } = {};
+    if (categories.length > 0) {
+      categories.forEach((cat) => {
+        result[cat] = membersToDisplay.filter((m) => m.category === cat);
+      });
+    } else {
+      result['Partners']              = membersToDisplay.filter((m) => m.category === 'Partners');
+      result['Consulting Partners']   = membersToDisplay.filter((m) => m.category === 'Consulting Partners');
+      result['Associates']            = membersToDisplay.filter((m) => m.category === 'Associates');
+      result['Administrative staff']  = membersToDisplay.filter((m) => m.category === 'Administrative staff');
+      result['Assistants']            = membersToDisplay.filter((m) => m.category === 'Assistants');
+    }
+    return result;
+  }, [membersToDisplay, categories]);
 
   const displayPartners = (teamByCategory['Partners'] || []).slice(0, 3);
 
@@ -75,7 +81,6 @@ const Team = () => {
             </h2>
           </div>
 
-          {/* Desktop "View All" */}
           <button
             onClick={handleViewAllTeam}
             className="hidden sm:flex items-center gap-2 self-end text-sm font-semibold text-[#bfa06f] hover:text-[#a08a5f] transition-colors duration-200 group pb-1 border-b border-[#bfa06f]/40 hover:border-[#a08a5f] whitespace-nowrap"
@@ -85,20 +90,17 @@ const Team = () => {
           </button>
         </div>
 
-        {/* Subheading — desktop only */}
         <p className="hidden sm:block text-base text-[#4a4a4a] max-w-2xl mb-10 leading-relaxed">
           Meet our experienced partners dedicated to providing exceptional legal
           services and achieving the best outcomes for every client.
         </p>
 
-        {/* ── Error banner ── */}
         {error && (
           <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl">
             <p className="text-red-600 text-xs">Note: Displaying default team members. {error}</p>
           </div>
         )}
 
-        {/* ── Cards ── */}
         {loading ? (
           <div className="grid grid-cols-3 sm:grid-cols-3 gap-2.5 sm:gap-6">
             {[...Array(3)].map((_, i) => (
@@ -115,7 +117,6 @@ const Team = () => {
               >
                 <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1">
 
-                  {/* Portrait image */}
                   <div className="aspect-[3/4] sm:aspect-[4/5] overflow-hidden bg-[#e8e0d0]">
                     <img
                       src={member.image}
@@ -124,25 +125,18 @@ const Team = () => {
                     />
                   </div>
 
-                  {/* Card body */}
                   <div className="p-2.5 sm:p-6 bg-white">
-                    {/* Gold rule */}
                     <div className="w-4 sm:w-5 h-0.5 bg-[#bfa06f] mb-1.5 sm:mb-3" />
-
-                    <h3 className="font-bold text-[#1a1a1a] leading-tight line-clamp-1
-                      text-[0.65rem] sm:text-lg md:text-xl mb-0.5 sm:mb-1">
+                    <h3 className="font-bold text-[#1a1a1a] leading-tight line-clamp-1 text-[0.65rem] sm:text-lg md:text-xl mb-0.5 sm:mb-1">
                       {member.name}
                     </h3>
-                    <p className="text-[#bfa06f] font-semibold leading-tight line-clamp-1
-                      text-[0.6rem] sm:text-sm mb-1 sm:mb-2">
+                    <p className="text-[#bfa06f] font-semibold leading-tight line-clamp-1 text-[0.6rem] sm:text-sm mb-1 sm:mb-2">
                       {member.role}
                     </p>
-                    <p className="text-[#6a6a6a] leading-snug line-clamp-2
-                      text-[0.55rem] sm:text-sm hidden sm:block">
+                    <p className="text-[#6a6a6a] leading-snug line-clamp-2 text-[0.55rem] sm:text-sm hidden sm:block">
                       {member.specialization}
                     </p>
 
-                    {/* Contact icons — desktop only */}
                     <div className="hidden sm:flex items-center gap-2 mt-4">
                       <a
                         href={`mailto:${member.email}`}
@@ -180,7 +174,6 @@ const Team = () => {
           </div>
         )}
 
-        {/* ── Mobile "View All" ── */}
         <div className="mt-6 flex justify-center sm:hidden">
           <button
             onClick={handleViewAllTeam}
@@ -202,7 +195,6 @@ const Team = () => {
             className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal header */}
             <div className="relative">
               <img
                 src={selectedPartner.image}
@@ -215,11 +207,9 @@ const Team = () => {
               >
                 <X className="h-4 w-4" />
               </button>
-              {/* Gradient fade into body */}
               <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white to-transparent" />
             </div>
 
-            {/* Modal body */}
             <div className="px-5 sm:px-8 pb-7 sm:pb-8 -mt-2">
               <div className="flex items-center gap-2 mb-1">
                 <span className="block h-px w-5 bg-[#bfa06f]" />
@@ -264,7 +254,6 @@ const Team = () => {
                 </div>
               )}
 
-              {/* Contact row */}
               <div className="flex items-center gap-2 pt-4 border-t border-[#e8e0d0]">
                 <a
                   href={`mailto:${selectedPartner.email}`}

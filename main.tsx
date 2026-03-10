@@ -1,8 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query'; // ← ADD
 import App from './App.tsx';
 import './index.css';
+import { queryClient } from './lib/queryClient';             // ← ADD
+import { AppDataProvider } from './context/AppDataContext';  // ← ADD
 import { initializeAccessibility } from './utils/accessibility';
 import { initializePerformanceOptimizations } from './utils/performanceOptimization';
 import { setupGlobalErrorHandling } from './utils/errorHandling';
@@ -23,7 +26,11 @@ seedDatabase().catch(console.error);
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <QueryClientProvider client={queryClient}> {/* ← ADD */}
+        <AppDataProvider>                         {/* ← ADD */}
+          <App />
+        </AppDataProvider>                        {/* ← ADD */}
+      </QueryClientProvider>                      {/* ← ADD */}
     </BrowserRouter>
   </StrictMode>
 );

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react'; // ← removed useEffect
 import {
   Briefcase, MapPin, Clock, GraduationCap, Heart,
   Users, TrendingUp, Award, X, ArrowRight, CheckCircle, Loader2,
 } from 'lucide-react';
 import Footer from '../components/Footer';
-import { getActiveJobPositions, JobPosition } from '../services/jobsApi';
+import { useCareers } from '../hooks/useSiteData';           // ← CHANGED
+import type { Career } from '../context/AppDataContext';     // ← CHANGED (was jobsApi)
 
 const benefits = [
   {
@@ -61,18 +62,18 @@ const steps = [
 ];
 
 const CareersPage = () => {
-  const [openPositions, setOpenPositions] = useState<JobPosition[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    getActiveJobPositions().then((p) => { setOpenPositions(p); setLoading(false); });
-  }, []);
+  // ← CHANGED: reads from AppDataContext — zero extra API calls
+  const { careers, loading } = useCareers();
 
-  const handleApply = (position: JobPosition) => {
+  // Filter active positions client-side — no extra query needed
+  const openPositions = careers.filter((c) => c.is_active !== false);
+
+  const handleApply = (position: Career) => {
     const subject = encodeURIComponent(`Application for ${position.title}`);
     const body = encodeURIComponent(
-      `Dear Hiring Team,\n\nI am writing to express my interest in the ${position.title} position in the ${position.department} department at SOK Law.\n\nPlease find my CV and cover letter attached.\n\nBest regards`
+      `Dear Hiring Team,\n\nI am writing to express my interest in the ${position.title} position in the ${position.department ?? ''} department at SOK Law.\n\nPlease find my CV and cover letter attached.\n\nBest regards`
     );
     window.location.href = `mailto:careers@soklaw.co.ke?subject=${subject}&body=${body}`;
   };
@@ -80,16 +81,12 @@ const CareersPage = () => {
   return (
     <div className="min-h-screen bg-white w-full overflow-x-hidden">
 
-      {/* ── Hero — split layout with decorative rule ── */}
+      {/* ── Hero ── */}
       <div className="bg-[#0d2340] pt-24 sm:pt-28 pb-10 sm:pb-16 relative overflow-hidden">
-        {/* Decorative diagonal line — desktop only */}
         <div
           className="hidden lg:block absolute right-0 top-0 bottom-0 w-[38%] opacity-[0.04]"
-          style={{
-            backgroundImage: 'repeating-linear-gradient(-55deg, #bfa06f 0px, #bfa06f 1px, transparent 1px, transparent 28px)',
-          }}
+          style={{ backgroundImage: 'repeating-linear-gradient(-55deg, #bfa06f 0px, #bfa06f 1px, transparent 1px, transparent 28px)' }}
         />
-
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-10 relative z-10">
           <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <span className="block h-px w-5 sm:w-8 bg-[#bfa06f] flex-shrink-0 transition-all" />
@@ -105,12 +102,10 @@ const CareersPage = () => {
             SOK Law is built on people — sharp, committed advocates who take their work seriously
             and support each other genuinely. If that sounds like you, we'd like to talk.
           </p>
-
-          {/* Stat strip */}
           <div className="hidden sm:flex items-center gap-8 mt-8 pt-8 border-t border-white/10">
             {[
-              { val: '15+', label: 'Years in practice' },
-              { val: '6',   label: 'Practice areas'    },
+              { val: '15+',  label: 'Years in practice'  },
+              { val: '6',    label: 'Practice areas'     },
               { val: '100%', label: 'Partner-led hiring' },
             ].map(({ val, label }) => (
               <div key={label}>
@@ -140,7 +135,6 @@ const CareersPage = () => {
               Not perks on a brochure — real things that matter to the people who work here.
             </p>
           </div>
-
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
             {benefits.map(({ icon: Icon, title, description }, i) => (
               <div
@@ -161,7 +155,7 @@ const CareersPage = () => {
           </div>
         </section>
 
-        {/* ── Core Values — large number accent ── */}
+        {/* ── Core Values ── */}
         <section>
           <div className="mb-6 sm:mb-12">
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
@@ -177,14 +171,12 @@ const CareersPage = () => {
               These aren't words on a wall. They show up in how we take instructions, argue cases, and treat each other.
             </p>
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
             {values.map(({ title, description }, i) => (
               <div
                 key={i}
                 className="relative overflow-hidden bg-[#f9f7f1] border border-[#e8e0d0] rounded-xl sm:rounded-2xl p-3 sm:p-6 hover:border-[#bfa06f]/40 transition-colors duration-200"
               >
-                {/* Oversized number watermark */}
                 <span className="hidden sm:block absolute -right-2 -bottom-3 text-[5rem] font-black text-[#bfa06f]/[0.07] leading-none select-none pointer-events-none">
                   {i + 1}
                 </span>
@@ -274,7 +266,7 @@ const CareersPage = () => {
                       { icon: MapPin,    val: position.location   },
                       { icon: Clock,     val: position.type       },
                       { icon: Briefcase, val: position.experience },
-                    ].map(({ icon: Icon, val }) => (
+                    ].filter(({ val }) => !!val).map(({ icon: Icon, val }) => (
                       <div
                         key={val}
                         className="flex items-center gap-1 sm:gap-1.5 bg-[#f9f7f1] border border-[#e8e0d0] rounded-full px-2 py-0.5 sm:px-3 sm:py-1"
@@ -290,14 +282,11 @@ const CareersPage = () => {
           )}
         </section>
 
-        {/* ── Internship CTA — asymmetric layout ── */}
+        {/* ── Internship CTA ── */}
         <section className="relative overflow-hidden bg-[#f9f7f1] border border-[#e8e0d0] rounded-xl sm:rounded-2xl p-4 sm:p-10">
-          {/* Decorative hatching — desktop */}
           <div
             className="hidden sm:block absolute right-0 top-0 bottom-0 w-[30%] opacity-[0.06]"
-            style={{
-              backgroundImage: 'repeating-linear-gradient(-55deg, #bfa06f 0px, #bfa06f 1px, transparent 1px, transparent 20px)',
-            }}
+            style={{ backgroundImage: 'repeating-linear-gradient(-55deg, #bfa06f 0px, #bfa06f 1px, transparent 1px, transparent 20px)' }}
           />
           <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4 sm:gap-10">
             <div className="flex items-center justify-center w-10 h-10 sm:w-16 sm:h-16 rounded-2xl bg-[#bfa06f]/12 border border-[#bfa06f]/20 flex-shrink-0">
@@ -383,9 +372,7 @@ const CareersPage = () => {
         <section className="relative overflow-hidden bg-[#0d2340] rounded-xl sm:rounded-2xl p-4 sm:p-10 lg:p-14">
           <div
             className="hidden sm:block absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage: 'repeating-linear-gradient(-55deg, #bfa06f 0px, #bfa06f 1px, transparent 1px, transparent 28px)',
-            }}
+            style={{ backgroundImage: 'repeating-linear-gradient(-55deg, #bfa06f 0px, #bfa06f 1px, transparent 1px, transparent 28px)' }}
           />
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3 sm:mb-4">
@@ -426,7 +413,6 @@ const CareersPage = () => {
         >
           <div className="bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-t-2xl max-h-[92vh] sm:max-h-[88vh] overflow-y-auto">
 
-            {/* Modal header */}
             <div className="sticky top-0 bg-white border-b border-[#e8e0d0] px-4 sm:px-7 py-3.5 sm:py-5 flex items-center justify-between z-10">
               <div className="flex items-center gap-2.5">
                 <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#bfa06f]/10">
@@ -516,7 +502,6 @@ const CareersPage = () => {
                 </div>
               ))}
 
-              {/* Apply block */}
               <div className="bg-[#bfa06f]/8 border border-[#bfa06f]/25 rounded-xl p-3.5 sm:p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="block h-px w-3 bg-[#bfa06f]" />

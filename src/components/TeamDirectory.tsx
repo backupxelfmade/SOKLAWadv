@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Mail, Phone, Linkedin, Award, BookOpen, Users, Scale, ArrowLeft, ArrowRight } from 'lucide-react';
-import { teamMembers, TeamMember } from '../data/teamData';
+import { X, Mail, Phone, Award, BookOpen, Scale, ArrowLeft } from 'lucide-react';
+import { useTeam } from '../hooks/useSiteData';              // ← CHANGED
+import type { TeamMember } from '../context/AppDataContext'; // ← CHANGED
 
 interface TeamDirectoryProps {
   isOpen: boolean;
@@ -9,6 +10,9 @@ interface TeamDirectoryProps {
 
 const TeamDirectory: React.FC<TeamDirectoryProps> = ({ isOpen, onClose }) => {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+
+  // ← CHANGED: reads from context — zero API calls
+  const { team: teamMembers } = useTeam();
 
   if (!isOpen) return null;
 
@@ -38,7 +42,6 @@ const TeamDirectory: React.FC<TeamDirectoryProps> = ({ isOpen, onClose }) => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
-              {/* Nav buttons */}
               <button
                 onClick={() => setSelectedMember(null)}
                 className="absolute top-3 left-3 sm:top-4 sm:left-4 flex items-center gap-1.5 bg-black/40 hover:bg-black/60 text-white text-xs font-medium px-3 py-1.5 rounded-full backdrop-blur-sm transition-all duration-200"
@@ -53,7 +56,6 @@ const TeamDirectory: React.FC<TeamDirectoryProps> = ({ isOpen, onClose }) => {
                 <X className="h-4 w-4" />
               </button>
 
-              {/* Name overlay */}
               <div className="absolute bottom-4 left-4 sm:left-6">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="block h-px w-5 bg-[#bfa06f]" />
@@ -100,69 +102,83 @@ const TeamDirectory: React.FC<TeamDirectoryProps> = ({ isOpen, onClose }) => {
 
                 {/* Left col */}
                 <div className="space-y-5">
-                  <InfoBlock title="About">
-                    <p className="text-[#4a4a4a] text-sm leading-relaxed">{selectedMember.description}</p>
-                  </InfoBlock>
+                  {selectedMember.description && (
+                    <InfoBlock title="About">
+                      <p className="text-[#4a4a4a] text-sm leading-relaxed">{selectedMember.description}</p>
+                    </InfoBlock>
+                  )}
 
-                  <InfoBlock title="Experience">
-                    <p className="text-[#4a4a4a] text-sm">{selectedMember.experience}</p>
-                  </InfoBlock>
+                  {selectedMember.experience && (
+                    <InfoBlock title="Experience">
+                      <p className="text-[#4a4a4a] text-sm">{selectedMember.experience}</p>
+                    </InfoBlock>
+                  )}
 
-                  <InfoBlock title="Languages">
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedMember.languages.map((lang, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-[#bfa06f]/10 text-[#8b7355] text-xs font-medium rounded-full">
-                          {lang}
-                        </span>
-                      ))}
-                    </div>
-                  </InfoBlock>
+                  {selectedMember.languages && selectedMember.languages.length > 0 && (
+                    <InfoBlock title="Languages">
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedMember.languages.map((lang, i) => (
+                          <span key={i} className="px-2.5 py-1 bg-[#bfa06f]/10 text-[#8b7355] text-xs font-medium rounded-full">
+                            {lang}
+                          </span>
+                        ))}
+                      </div>
+                    </InfoBlock>
+                  )}
                 </div>
 
                 {/* Right col */}
                 <div className="space-y-5">
-                  <InfoBlock title="Areas of Expertise">
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedMember.expertise.map((area, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-[#bfa06f]/10 text-[#8b7355] text-xs font-medium rounded-full">
-                          {area}
-                        </span>
-                      ))}
-                    </div>
-                  </InfoBlock>
+                  {selectedMember.expertise && selectedMember.expertise.length > 0 && (
+                    <InfoBlock title="Areas of Expertise">
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedMember.expertise.map((area, i) => (
+                          <span key={i} className="px-2.5 py-1 bg-[#bfa06f]/10 text-[#8b7355] text-xs font-medium rounded-full">
+                            {area}
+                          </span>
+                        ))}
+                      </div>
+                    </InfoBlock>
+                  )}
 
-                  <InfoBlock title="Education">
-                    <ul className="space-y-2">
-                      {selectedMember.education.map((edu, i) => (
-                        <li key={i} className="flex items-start gap-2 text-[#4a4a4a] text-sm">
-                          <BookOpen className="h-3.5 w-3.5 mt-0.5 text-[#bfa06f] flex-shrink-0" />
-                          {edu}
-                        </li>
-                      ))}
-                    </ul>
-                  </InfoBlock>
+                  {selectedMember.education && selectedMember.education.length > 0 && (
+                    <InfoBlock title="Education">
+                      <ul className="space-y-2">
+                        {selectedMember.education.map((edu, i) => (
+                          <li key={i} className="flex items-start gap-2 text-[#4a4a4a] text-sm">
+                            <BookOpen className="h-3.5 w-3.5 mt-0.5 text-[#bfa06f] flex-shrink-0" />
+                            {edu}
+                          </li>
+                        ))}
+                      </ul>
+                    </InfoBlock>
+                  )}
 
-                  <InfoBlock title="Admissions">
-                    <ul className="space-y-2">
-                      {selectedMember.admissions.map((adm, i) => (
-                        <li key={i} className="flex items-start gap-2 text-[#4a4a4a] text-sm">
-                          <Scale className="h-3.5 w-3.5 mt-0.5 text-[#bfa06f] flex-shrink-0" />
-                          {adm}
-                        </li>
-                      ))}
-                    </ul>
-                  </InfoBlock>
+                  {selectedMember.admissions && selectedMember.admissions.length > 0 && (
+                    <InfoBlock title="Admissions">
+                      <ul className="space-y-2">
+                        {selectedMember.admissions.map((adm, i) => (
+                          <li key={i} className="flex items-start gap-2 text-[#4a4a4a] text-sm">
+                            <Scale className="h-3.5 w-3.5 mt-0.5 text-[#bfa06f] flex-shrink-0" />
+                            {adm}
+                          </li>
+                        ))}
+                      </ul>
+                    </InfoBlock>
+                  )}
 
-                  <InfoBlock title="Key Achievements">
-                    <ul className="space-y-2">
-                      {selectedMember.achievements.map((ach, i) => (
-                        <li key={i} className="flex items-start gap-2 text-[#4a4a4a] text-sm">
-                          <Award className="h-3.5 w-3.5 mt-0.5 text-[#bfa06f] flex-shrink-0" />
-                          {ach}
-                        </li>
-                      ))}
-                    </ul>
-                  </InfoBlock>
+                  {selectedMember.achievements && selectedMember.achievements.length > 0 && (
+                    <InfoBlock title="Key Achievements">
+                      <ul className="space-y-2">
+                        {selectedMember.achievements.map((ach, i) => (
+                          <li key={i} className="flex items-start gap-2 text-[#4a4a4a] text-sm">
+                            <Award className="h-3.5 w-3.5 mt-0.5 text-[#bfa06f] flex-shrink-0" />
+                            {ach}
+                          </li>
+                        ))}
+                      </ul>
+                    </InfoBlock>
+                  )}
                 </div>
               </div>
             </div>
@@ -214,7 +230,6 @@ const TeamDirectory: React.FC<TeamDirectoryProps> = ({ isOpen, onClose }) => {
                   onClick={() => setSelectedMember(member)}
                   className="group bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-0.5"
                 >
-                  {/* Portrait */}
                   <div className="aspect-[3/4] sm:aspect-[4/5] overflow-hidden bg-[#e8e0d0]">
                     <img
                       src={member.image}
@@ -223,25 +238,23 @@ const TeamDirectory: React.FC<TeamDirectoryProps> = ({ isOpen, onClose }) => {
                     />
                   </div>
 
-                  {/* Info */}
                   <div className="p-2 sm:p-4">
                     <div className="w-3 sm:w-4 h-0.5 bg-[#bfa06f] mb-1 sm:mb-2" />
-                    <h3 className="font-bold text-[#1a1a1a] leading-tight line-clamp-1
-                      text-[0.6rem] sm:text-sm md:text-base">
+                    <h3 className="font-bold text-[#1a1a1a] leading-tight line-clamp-1 text-[0.6rem] sm:text-sm md:text-base">
                       {member.name}
                     </h3>
-                    <p className="text-[#bfa06f] font-semibold leading-tight line-clamp-1
-                      text-[0.55rem] sm:text-xs mt-0.5">
+                    <p className="text-[#bfa06f] font-semibold leading-tight line-clamp-1 text-[0.55rem] sm:text-xs mt-0.5">
                       {member.role}
                     </p>
-                    {/* Qualifications — desktop only */}
-                    <div className="hidden sm:flex flex-wrap gap-1 mt-2">
-                      {member.qualifications?.slice(0, 2).map((qual, i) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-[#f9f7f1] text-[#6a6a6a] text-[10px] rounded font-medium">
-                          {qual}
-                        </span>
-                      ))}
-                    </div>
+                    {member.qualifications && member.qualifications.length > 0 && (
+                      <div className="hidden sm:flex flex-wrap gap-1 mt-2">
+                        {member.qualifications.slice(0, 2).map((qual, i) => (
+                          <span key={i} className="px-1.5 py-0.5 bg-[#f9f7f1] text-[#6a6a6a] text-[10px] rounded font-medium">
+                            {qual}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

@@ -1,16 +1,20 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getCache, setCache, clearCache } from '../lib/cache'; // ← NEW
 
 type MediaFile = {
   id: string;
   name: string;
-  url: string;
+  url: string;           // Full-res — used in Lightbox
+  thumbnailUrl: string;  // Resized — used in grid cards (NEW)
   type: 'image' | 'video';
 };
 
-const BUCKET_NAME = 'gallery';
+const BUCKET_NAME   = 'gallery';
 const GALLERY_PREFIX = '';
+const CACHE_KEY     = 'gallery_list';
+const CACHE_TTL     = 1000 * 60 * 30; // 30 minutes
 
 const isVideo = (name: string) => /\.(mp4|mov|webm|ogg|m4v)$/i.test(name);
 const isImage = (name: string) => /\.(jpe?g|png|webp|gif|avif)$/i.test(name);
@@ -84,7 +88,6 @@ const Lightbox: React.FC<{
       style={{ animation: 'fadeIn 0.2s ease' }}
       onClick={onClose}
     >
-      {/* Close */}
       <button
         onClick={onClose}
         className="absolute top-4 right-4 z-20 flex items-center justify-center h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all duration-200 hover:scale-110"
@@ -94,7 +97,6 @@ const Lightbox: React.FC<{
         </svg>
       </button>
 
-      {/* Prev — desktop */}
       {items.length > 1 && (
         <button
           onClick={(e) => { e.stopPropagation(); onPrev(); }}
@@ -106,13 +108,11 @@ const Lightbox: React.FC<{
         </button>
       )}
 
-      {/* Media */}
       <div
         className="relative w-full max-w-4xl"
         style={{ animation: 'scaleIn 0.28s cubic-bezier(0.34,1.56,0.64,1)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Spinner while image loads */}
         {!imgLoaded && item.type === 'image' && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <svg className="animate-spin-slow h-8 w-8 text-[#bfa06f]" fill="none" viewBox="0 0 24 24">
@@ -125,16 +125,15 @@ const Lightbox: React.FC<{
         {item.type === 'video' ? (
           <video
             key={item.url}
-            src={item.url}
-            controls
-            autoPlay
+            src={item.url}               // Always full-res for video
+            controls autoPlay
             className="max-h-[82vh] w-full rounded-2xl shadow-2xl bg-black"
             style={{ animation: 'fadeIn 0.3s ease' }}
           />
         ) : (
           <img
             key={item.url}
-            src={item.url}
+            src={item.url}               // ← Full-res URL in lightbox
             alt=""
             onLoad={() => setImgLoaded(true)}
             className="max-h-[82vh] w-full object-contain rounded-2xl shadow-2xl"
@@ -142,12 +141,10 @@ const Lightbox: React.FC<{
           />
         )}
 
-        {/* Counter only — no filename */}
         <div className="mt-3 flex items-center justify-end px-1" style={{ animation: 'fadeUp 0.4s ease 0.15s both' }}>
           <span className="text-xs text-white/30">{index + 1} / {items.length}</span>
         </div>
 
-        {/* Mobile nav + dots */}
         {items.length > 1 && (
           <div className="flex items-center justify-center gap-2 mt-3">
             <button
@@ -177,7 +174,6 @@ const Lightbox: React.FC<{
         )}
       </div>
 
-      {/* Next — desktop */}
       {items.length > 1 && (
         <button
           onClick={(e) => { e.stopPropagation(); onNext(); }}
@@ -229,7 +225,6 @@ const MediaCard: React.FC<{
                      box-shadow 0.3s ease`,
       }}
     >
-      {/* Shimmer while loading */}
       {!mediaLoaded && (
         <div className="absolute inset-0 shimmer-bg z-[1]" style={{ borderRadius: 'inherit' }} />
       )}
@@ -237,15 +232,12 @@ const MediaCard: React.FC<{
       {item.type === 'video' ? (
         <>
           <video
-            src={`${item.url}#t=0.5`}
-            muted
-            playsInline
-            preload="metadata"
+            src={`${item.url}#t=0.5`}   // Always use full URL for video preview
+            muted playsInline preload="metadata"
             onLoadedData={() => setMediaLoaded(true)}
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             style={{ minHeight: 'inherit' }}
           />
-          {/* Play button */}
           <div className="absolute inset-0 flex items-center justify-center z-[2]">
             <span
               className="flex items-center justify-center h-14 w-14 rounded-full bg-black/40 group-hover:bg-[#bfa06f]/90 transition-all duration-300 shadow-xl"
@@ -256,14 +248,13 @@ const MediaCard: React.FC<{
               </svg>
             </span>
           </div>
-          {/* Video badge */}
           <span className="absolute top-3 left-3 z-[3] text-[9px] font-bold tracking-widest uppercase bg-[#bfa06f] text-white px-2.5 py-1 rounded-full shadow-md">
             Video
           </span>
         </>
       ) : (
         <img
-          src={item.url}
+          src={item.thumbnailUrl}        // ← Resized thumbnail in grid (saves bandwidth)
           alt=""
           loading="lazy"
           onLoad={() => setMediaLoaded(true)}
@@ -272,11 +263,9 @@ const MediaCard: React.FC<{
         />
       )}
 
-      {/* Gold inset ring on hover */}
       <div className="absolute inset-0 rounded-2xl pointer-events-none z-[4] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ boxShadow: 'inset 0 0 0 2px rgba(191,160,111,0.55)' }} />
 
-      {/* Hover overlay — gold zoom icon only, no filename */}
       {item.type === 'image' && (
         <div className="absolute inset-x-0 bottom-0 z-[3] px-3 pb-3 flex items-end justify-end
           opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0
@@ -295,14 +284,22 @@ const MediaCard: React.FC<{
 // ── Gallery Page ──────────────────────────────────────────────────────────────
 const GalleryPage: React.FC = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState<MediaFile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<MediaFile[]>(() => getCache<MediaFile[]>(CACHE_KEY) ?? []); // ← seed from cache
+  const [loading, setLoading] = useState(!getCache(CACHE_KEY));                                  // ← skip load if cached
   const [error, setError] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const loadMedia = async () => {
+  const loadMedia = useCallback(async (bust = false) => {
+    // If busting cache (manual refresh), clear stored list first
+    if (bust) clearCache(CACHE_KEY);
+
+    // Return early if valid cache exists and not forced
+    const cached = getCache<MediaFile[]>(CACHE_KEY);
+    if (cached && !bust) { setItems(cached); setLoading(false); return; }
+
     setLoading(true);
     setError(null);
+
     try {
       const { data, error: listError } = await supabase.storage
         .from(BUCKET_NAME)
@@ -311,28 +308,43 @@ const GalleryPage: React.FC = () => {
       if (listError) throw listError;
       if (!data) { setItems([]); return; }
 
-      const media = data
+      const media: MediaFile[] = data
         .filter((f) => !f.name.startsWith('.') && (isImage(f.name) || isVideo(f.name)))
         .map((f) => {
           const path = GALLERY_PREFIX ? `${GALLERY_PREFIX}/${f.name}` : f.name;
-          const { data: { publicUrl } } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
+          const isTallCard = false; // thumbnails are uniform; tall is layout-only
+
+          // Full-res URL (for lightbox)
+          const { data: { publicUrl: fullUrl } } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(path);
+
+          // Thumbnail URL (for grid — smaller, faster) — Pro plan feature
+          const { data: { publicUrl: thumbUrl } } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(path, {
+              transform: { width: 600, quality: 75 },
+            });
+
           return {
-            id: f.id ?? f.name,
-            name: f.name,
-            url: publicUrl,
-            type: (isVideo(f.name) ? 'video' : 'image') as 'image' | 'video',
+            id:           f.id ?? f.name,
+            name:         f.name,
+            url:          fullUrl,   // full-res for lightbox
+            thumbnailUrl: thumbUrl,  // compressed for grid
+            type:         (isVideo(f.name) ? 'video' : 'image') as 'image' | 'video',
           };
         });
 
       setItems(media);
-    } catch (err: any) {
-      setError(err.message ?? 'Failed to load media.');
+      setCache(CACHE_KEY, media, CACHE_TTL); // ← Persist list for 30 min
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load media.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { void loadMedia(); }, []);
+  useEffect(() => { void loadMedia(); }, [loadMedia]);
 
   const openLightbox  = useCallback((i: number) => setLightboxIndex(i), []);
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
@@ -384,21 +396,32 @@ const GalleryPage: React.FC = () => {
                 Browse visual highlights from our practice, curated and stored securely in Supabase Storage.
               </p>
             </div>
-            {!loading && items.length > 0 && (
-              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0"
-                style={{ animation: 'fadeIn 0.5s ease 0.4s both' }}>
-                {photoCount > 0 && (
-                  <span className="text-[11px] font-medium text-[#bfa06f] border border-[#bfa06f]/30 rounded-full px-3 py-1">
-                    {photoCount} photo{photoCount !== 1 ? 's' : ''}
-                  </span>
-                )}
-                {videoCount > 0 && (
-                  <span className="text-[11px] font-medium text-[#bfa06f] border border-[#bfa06f]/30 rounded-full px-3 py-1">
-                    {videoCount} video{videoCount !== 1 ? 's' : ''}
-                  </span>
-                )}
-              </div>
-            )}
+
+            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap"
+              style={{ animation: 'fadeIn 0.5s ease 0.4s both' }}>
+              {!loading && photoCount > 0 && (
+                <span className="text-[11px] font-medium text-[#bfa06f] border border-[#bfa06f]/30 rounded-full px-3 py-1">
+                  {photoCount} photo{photoCount !== 1 ? 's' : ''}
+                </span>
+              )}
+              {!loading && videoCount > 0 && (
+                <span className="text-[11px] font-medium text-[#bfa06f] border border-[#bfa06f]/30 rounded-full px-3 py-1">
+                  {videoCount} video{videoCount !== 1 ? 's' : ''}
+                </span>
+              )}
+              {/* Refresh button — clears cache and re-fetches */}
+              <button
+                onClick={() => loadMedia(true)}
+                disabled={loading}
+                className="flex items-center gap-1.5 text-[11px] font-medium text-white/40 hover:text-[#bfa06f] border border-white/10 hover:border-[#bfa06f]/40 rounded-full px-3 py-1 transition-all duration-200 disabled:opacity-40"
+                title="Refresh gallery"
+              >
+                <svg className={`h-3 w-3 ${loading ? 'animate-spin-slow' : ''}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582M20 20v-5h-.581M5.635 19A9 9 0 104.582 9H4" />
+                </svg>
+                Refresh
+              </button>
+            </div>
           </div>
         </div>
 

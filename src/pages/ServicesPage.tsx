@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { servicesData } from '../data/servicesData';
-import { useServices } from '../hooks/useServices';
+import { useServices } from '../hooks/useSiteData'; // ← CHANGED (was '../hooks/useServices')
 import { ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 
 const ServicesPage = () => {
@@ -27,7 +27,6 @@ const ServicesPage = () => {
         <div className="bg-[#0d2340] pt-24 sm:pt-28 pb-8 sm:pb-14">
           <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-10">
 
-            {/* Back button */}
             <button
               onClick={handleBackToHome}
               className="group inline-flex items-center gap-2 text-[0.7rem] sm:text-sm font-semibold text-white/50 hover:text-white transition-colors duration-200 mb-6 sm:mb-10"
@@ -36,7 +35,6 @@ const ServicesPage = () => {
               Back
             </button>
 
-            {/* Header text */}
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
               <span className="block h-px w-5 sm:w-6 bg-[#bfa06f]" />
               <span className="text-[0.6rem] sm:text-[0.7rem] font-semibold uppercase tracking-widest text-[#bfa06f]">
@@ -56,7 +54,6 @@ const ServicesPage = () => {
         {/* ── Cards section ── */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-10 py-6 sm:py-12 lg:py-16">
 
-          {/* Error banner */}
           {error && (
             <div className="flex items-start gap-3 bg-[#f9f7f1] border border-[#e8e0d0] rounded-xl px-3 py-2.5 mb-4 sm:mb-8 max-w-lg">
               <AlertCircle className="h-3.5 w-3.5 text-[#bfa06f] mt-0.5 flex-shrink-0" />
@@ -64,7 +61,6 @@ const ServicesPage = () => {
             </div>
           )}
 
-          {/* Loading skeleton */}
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-5 lg:gap-6">
               {[...Array(6)].map((_, i) => (
@@ -93,16 +89,12 @@ const ServicesPage = () => {
                   className="relative overflow-hidden rounded-xl sm:rounded-3xl group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-500"
                   style={{ height: 'clamp(140px, 30vw, 420px)' }}
                 >
-                  {/* Background image */}
                   <div
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                     style={{ backgroundImage: `url(${service.header_image || service.headerImage})` }}
                   />
-
-                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent group-hover:from-black/65 transition-all duration-500" />
 
-                  {/* Arrow chip */}
                   <div className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 lg:top-5 lg:right-5">
                     <div className="flex items-center justify-center rounded-full bg-[#bfa06f] group-hover:bg-white transition-colors duration-300 shadow-md
                       w-7 h-7 sm:w-9 sm:h-9 lg:w-11 lg:h-11">
@@ -111,7 +103,6 @@ const ServicesPage = () => {
                     </div>
                   </div>
 
-                  {/* Card content */}
                   <div className="absolute inset-0 flex flex-col justify-end p-2.5 sm:p-5 lg:p-7">
                     <div className="h-0.5 bg-[#d4b483] mb-1.5 sm:mb-2.5 transition-all duration-300
                       w-3 sm:w-5 group-hover:w-5 sm:group-hover:w-8" />

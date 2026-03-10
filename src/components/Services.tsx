@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { servicesData } from '../data/servicesData';
-import { useServices } from '../hooks/useServices';
+import { useServices } from '../hooks/useSiteData';  // ← CHANGED (was ../hooks/useServices)
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 
 const Services = () => {
@@ -57,7 +57,6 @@ const Services = () => {
             </h2>
           </div>
 
-          {/* Desktop "View All" */}
           <button
             onClick={handleViewAllServices}
             className="hidden sm:flex items-center gap-2 self-end text-sm font-semibold text-[#bfa06f] hover:text-[#a08a5f] transition-colors duration-200 group pb-1 border-b border-[#bfa06f]/40 hover:border-[#a08a5f] whitespace-nowrap"
@@ -67,13 +66,11 @@ const Services = () => {
           </button>
         </div>
 
-        {/* Subheading — desktop only */}
         <p className="hidden sm:block text-base text-[#4a4a4a] max-w-2xl mb-8 leading-relaxed">
           Comprehensive legal solutions across a broad range of practice areas—expert
           representation tailored to your needs.
         </p>
 
-        {/* ── Error banner ── */}
         {error && (
           <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl">
             <p className="text-red-600 text-xs">
@@ -82,7 +79,6 @@ const Services = () => {
           </div>
         )}
 
-        {/* ── Cards grid ── */}
         {loading ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
             {[...Array(4)].map((_, i) => (
@@ -102,25 +98,18 @@ const Services = () => {
                 className="service-card opacity-0 relative group overflow-hidden cursor-pointer transition-all duration-300 rounded-xl sm:rounded-2xl shadow-sm hover:shadow-xl"
                 style={{ height: 'clamp(160px, 25vw, 480px)' }}
               >
-                {/* Background image */}
                 <div
                   className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                  style={{
-                    backgroundImage: `url(${service.header_image || service.headerImage})`,
-                  }}
+                  style={{ backgroundImage: `url(${service.header_image || (service as any).headerImage})` }}
                 />
-
-                {/* Strong gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/10 group-hover:from-black/95 transition-all duration-300" />
 
-                {/* Arrow chip */}
                 <div className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 z-10">
                   <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-[#bfa06f] flex items-center justify-center shadow-md group-hover:bg-[#a08a5f] transition-colors duration-200">
                     <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                   </div>
                 </div>
 
-                {/* Bottom content */}
                 <div className="absolute bottom-0 inset-x-0 z-10 p-3 sm:p-5 lg:p-6">
                   <div className="w-4 sm:w-5 h-0.5 bg-[#bfa06f] mb-1.5 sm:mb-2.5 transition-all duration-300 group-hover:w-7 sm:group-hover:w-9" />
                   <h3 className="service-title text-xs sm:text-base lg:text-xl font-bold leading-snug line-clamp-2">
@@ -132,14 +121,12 @@ const Services = () => {
                   </div>
                 </div>
 
-                {/* Gold border on hover */}
                 <div className="absolute inset-0 rounded-xl sm:rounded-2xl border border-transparent group-hover:border-[#bfa06f]/30 transition-all duration-300 pointer-events-none" />
               </div>
             ))}
           </div>
         )}
 
-        {/* ── Mobile "View All" ── */}
         <div className="mt-5 sm:mt-10 flex justify-center sm:hidden">
           <button
             onClick={handleViewAllServices}

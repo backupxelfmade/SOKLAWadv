@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';          // ← removed useEffect
 import { useParams, useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { servicesData } from '../data/servicesData';
-import { servicesApi, ServiceFormatted } from '../services/servicesApi';
+import { useServices } from '../hooks/useSiteData';          // ← CHANGED
 import { ArrowLeft, ArrowRight, CheckCircle, Phone, Mail, Loader2, ChevronDown } from 'lucide-react';
 import * as Icons from 'lucide-react';
 
@@ -18,7 +18,6 @@ const Section = ({
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border-b border-[#e8e0d0] last:border-0 w-full overflow-hidden">
-      {/* Mobile toggle */}
       <button
         className="sm:hidden w-full flex items-center justify-between py-2.5 text-left"
         onClick={() => setOpen((p) => !p)}
@@ -34,16 +33,10 @@ const Section = ({
         />
       </button>
 
-      {/* Mobile content */}
-      <div
-        className={`sm:hidden w-full overflow-hidden transition-all duration-200 ${
-          open ? 'max-h-[800px] pb-3' : 'max-h-0'
-        }`}
-      >
+      <div className={`sm:hidden w-full overflow-hidden transition-all duration-200 ${open ? 'max-h-[800px] pb-3' : 'max-h-0'}`}>
         {children}
       </div>
 
-      {/* Desktop — always visible */}
       <div className="hidden sm:block w-full pb-10">
         <div className="flex items-center gap-2 mb-4">
           <span className="block h-px w-5 bg-[#bfa06f] flex-shrink-0" />
@@ -60,47 +53,28 @@ const Section = ({
 const ServiceDetailPage = () => {
   const { serviceId } = useParams();
   const navigate = useNavigate();
-  const [service, setService] = useState<ServiceFormatted | null>(null);
-  const [relatedServices, setRelatedServices] = useState<ServiceFormatted[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchServiceData = async () => {
-      if (!serviceId) return;
-      try {
-        setLoading(true);
-        const serviceData = await servicesApi.fetchById(serviceId);
-        if (!serviceData) {
-          const found = servicesData.find(
-            (s: any) => s.slug === serviceId || s.id === serviceId
-          );
-          setService(found || null);
-        } else {
-          setService(serviceData);
-        }
-        const allServices = await servicesApi.fetchAll();
-        setRelatedServices(allServices.filter((s) => s.id !== serviceId));
-      } catch {
-        const found = servicesData.find(
-          (s: any) => s.slug === serviceId || s.id === serviceId
-        );
-        setService(found || null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchServiceData();
-  }, [serviceId]);
+  // ← CHANGED: reads from context — zero API calls
+  const { services, loading } = useServices();
 
-  const handleBack = () => navigate(-1);
-  const goToContact = () => {
-    navigate('/contact');
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  };
-  const goToService = (s: ServiceFormatted) => {
-    navigate(`/services/${s.slug || s.id}`);
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  };
+  // Find current service from cached array, fallback to static data
+  const service = useMemo(() => {
+    if (!serviceId) return null;
+    const fromContext = services.find((s) => s.slug === serviceId || s.id === serviceId);
+    if (fromContext) return fromContext;
+    // Fallback to static servicesData if not found in DB
+    return servicesData.find((s: any) => s.slug === serviceId || s.id === serviceId) ?? null;
+  }, [services, serviceId]);
+
+  // Related services derived from same cached array — no extra call
+  const relatedServices = useMemo(
+    () => services.filter((s) => s.id !== serviceId && s.slug !== serviceId),
+    [services, serviceId]
+  );
+
+  const handleBack  = () => navigate(-1);
+  const goToContact = () => { navigate('/contact'); window.scrollTo({ top: 0, behavior: 'instant' }); };
+  const goToService = (s: any) => { navigate(`/services/${s.slug || s.id}`); window.scrollTo({ top: 0, behavior: 'instant' }); };
 
   if (loading) {
     return (
@@ -143,13 +117,16 @@ const ServiceDetailPage = () => {
   }
 
   const IconComponent = (Icons as any)[service.icon] || Icons.Scale;
-  const keyServices: string[] = service.keyServices || [];
-  const whyChooseUs: any[] = service.whyChooseUs || [];
-  const process: any[] = service.process || [];
+
+  // Normalise snake_case DB fields → support both DB and static data field names
+  const headerImage  = (service as any).header_image   || (service as any).headerImage;
+  const keyServices  = (service as any).key_services   || (service as any).keyServices   || [];
+  const whyChooseUs  = (service as any).why_choose_us  || (service as any).whyChooseUs   || [];
+  const process      = (service as any).process        || [];
+  const overview     = (service as any).overview       || '';
 
   return (
     <>
-      {/* overflow-x-hidden on root kills all horizontal bleed */}
       <div className="min-h-screen bg-white w-full overflow-x-hidden">
 
         {/* ── Hero ── */}
@@ -159,7 +136,7 @@ const ServiceDetailPage = () => {
         >
           <div
             className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${service.headerImage})` }}
+            style={{ backgroundImage: `url(${headerImage})` }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
 
@@ -230,16 +207,14 @@ const ServiceDetailPage = () => {
             <div className="lg:col-span-2 w-full min-w-0">
               <div className="w-full">
 
-                {/* Overview */}
-                {service.overview && (
+                {overview && (
                   <Section label="Overview" defaultOpen={true}>
                     <p className="text-[0.7rem] sm:text-base text-[#4a4a4a] leading-relaxed w-full">
-                      {service.overview}
+                      {overview}
                     </p>
                   </Section>
                 )}
 
-                {/* Key Services — single column on mobile, 2-col on desktop */}
                 {keyServices.length > 0 && (
                   <Section label="Key Services">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-3 w-full">
@@ -258,7 +233,6 @@ const ServiceDetailPage = () => {
                   </Section>
                 )}
 
-                {/* Why Choose Us */}
                 {whyChooseUs.length > 0 && (
                   <Section label="Why SOK Law">
                     <div className="space-y-1.5 sm:space-y-3 w-full">
@@ -286,7 +260,6 @@ const ServiceDetailPage = () => {
                   </Section>
                 )}
 
-                {/* Process */}
                 {process.length > 0 && (
                   <Section label="Our Process">
                     <div className="w-full">
@@ -312,7 +285,6 @@ const ServiceDetailPage = () => {
                   </Section>
                 )}
 
-                {/* Mobile related — horizontal scroll pills */}
                 {relatedServices.length > 0 && (
                   <div className="sm:hidden pt-2 pb-3 w-full">
                     <div className="flex items-center gap-2 mb-2">
@@ -321,7 +293,6 @@ const ServiceDetailPage = () => {
                         Related
                       </span>
                     </div>
-                    {/* Scoped overflow-x-auto — only this strip scrolls, not the page */}
                     <div
                       className="flex gap-1.5 pb-1"
                       style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}
