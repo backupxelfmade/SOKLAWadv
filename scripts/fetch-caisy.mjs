@@ -1,8 +1,17 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 
-const PROJECT_ID = process.env.CAISY_PROJECT_ID || '7763a144-9074-4dc5-a2f5-e2521e343d6b';
-const API_KEY = process.env.CAISY_API_KEY || 'f2iiXhHIObO05aNEle1vDlaDq0iGHmbr';
+const PROJECT_ID = process.env.CAISY_PROJECT_ID;
+const API_KEY = process.env.CAISY_API_KEY;
 const ENDPOINT = `https://cloud.caisy.io/api/v3/e/${PROJECT_ID}/graphql`;
+
+// ── Guard: skip gracefully if no credentials ──────────────────────────────────
+if (!PROJECT_ID || !API_KEY) {
+  console.warn('⚠️  CAISY_PROJECT_ID or CAISY_API_KEY missing — skipping fetch');
+  await mkdir('./public/data', { recursive: true });
+  await writeFile('./public/data/blog-posts.json', JSON.stringify([], null, 2));
+  console.log('✅ Wrote empty blog-posts.json (no credentials)');
+  process.exit(0);
+}
 
 // ── Rich Text Renderer ────────────────────────────────────────────────────────
 const renderMarks = (text, marks = []) => {
@@ -31,7 +40,6 @@ const renderInline = (nodes = []) => nodes.map(n => {
 const renderNode = (node) => {
   const inner    = () => renderInline(node.content ?? []);
   const children = () => (node.content ?? []).map(renderNode).join('');
-
   switch (node.type) {
     case 'paragraph':      return `<p>${inner()}</p>`;
     case 'heading':        return `<h${node.attrs?.level ?? 2}>${inner()}</h${node.attrs?.level ?? 2}>`;
@@ -91,7 +99,6 @@ async function main() {
     excerpt:       extractExcerpt(node.content),
   }));
 
-  // Create folder if missing
   await mkdir('./public/data', { recursive: true });
   await writeFile('./public/data/blog-posts.json', JSON.stringify(posts, null, 2));
   console.log(`✅ Saved ${posts.length} blog posts → public/data/blog-posts.json`);
