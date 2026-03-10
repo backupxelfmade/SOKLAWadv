@@ -4,7 +4,7 @@ const PROJECT_ID = process.env.CAISY_PROJECT_ID;
 const API_KEY = process.env.CAISY_API_KEY;
 const ENDPOINT = `https://cloud.caisy.io/api/v3/e/${PROJECT_ID}/graphql`;
 
-// ── Guard: skip gracefully if no credentials ──────────────────────────────────
+// ── Guard ─────────────────────────────────────────────────────────────────────
 if (!PROJECT_ID || !API_KEY) {
   console.warn('⚠️  CAISY_PROJECT_ID or CAISY_API_KEY missing — skipping fetch');
   await mkdir('./public/data', { recursive: true });
@@ -12,6 +12,14 @@ if (!PROJECT_ID || !API_KEY) {
   console.log('✅ Wrote empty blog-posts.json (no credentials)');
   process.exit(0);
 }
+
+// ── Slug Sanitizer ────────────────────────────────────────────────────────────
+const sanitizeSlug = (slug) =>
+  slug.toLowerCase().trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 
 // ── Rich Text Renderer ────────────────────────────────────────────────────────
 const renderMarks = (text, marks = []) => {
@@ -91,7 +99,7 @@ async function main() {
   const posts = data.allBlog.edges.map(({ node }) => ({
     id:            node.id,
     title:         node.title,
-    slug:          node.slug,
+    slug:          sanitizeSlug(node.slug), // ← Fixed
     author:        node.author,
     publishedDate: node.publishedDate,
     featuredImage: node.featuredImage ?? undefined,
@@ -104,11 +112,10 @@ async function main() {
   console.log(`✅ Saved ${posts.length} blog posts → public/data/blog-posts.json`);
 }
 
-// ── FIXED: exit 0 so build never fails due to Caisy errors ───────────────────
+// ── Never block the build ─────────────────────────────────────────────────────
 main().catch(async (e) => {
   console.error('❌ Caisy fetch failed:', e.message);
-  console.warn('⚠️  Writing empty JSON so build can continue...');
   await mkdir('./public/data', { recursive: true });
   await writeFile('./public/data/blog-posts.json', JSON.stringify([], null, 2));
-  process.exit(0); // ← KEY CHANGE: was process.exit(1)
+  process.exit(0);
 });
