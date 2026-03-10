@@ -36,7 +36,7 @@ const schemaMarkup = {
   alternateName: 'Simiyu, Opondo, Kiranga & Advocates',
   description: 'Leading Nairobi law firm providing expert legal representation in litigation, corporate law, real estate, family law, and 14 other practice areas since 2009.',
   url: 'https://soklaw.co.ke',
-  telephone: '+254205285048',
+  telephone: '+254705263776',
   email: 'Info@soklaw.co.ke',
   foundingDate: '2009',
   address: {
@@ -228,12 +228,12 @@ const Hero = () => {
             </button>
 
             <a
-              href="tel:+254205285048"
+              href="tel:+254705263776"
               style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}
               className="group flex items-center justify-center gap-2 border border-white/25 hover:border-white/55 hover:bg-white/10 hover:!text-white font-semibold text-sm sm:text-[0.95rem] px-6 sm:px-8 py-3.5 rounded-full backdrop-blur-sm transition-all duration-200"
             >
               <Phone className="h-4 w-4 flex-shrink-0" style={{ color: '#bfa06f' }} />
-              <span>+254 (0) 20 5285048</span>
+              <span>+254 705 263 776</span>
             </a>
           </div>
 
