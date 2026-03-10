@@ -33,7 +33,7 @@ const News = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await getAllBlogPosts();
+        const data = await getAllBlogPosts(); // ✅ Reads /data/blog-posts.json instantly
         setPosts(data.slice(0, 6));
       } catch (err) {
         console.error('Error fetching blog posts:', err);
@@ -54,9 +54,7 @@ const News = () => {
 
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+      month: 'short', day: 'numeric', year: 'numeric',
     });
 
   return (
@@ -76,7 +74,6 @@ const News = () => {
               Latest Blog Posts
             </h2>
           </div>
-
           {!isLoading && !error && posts.length > 0 && (
             <button
               onClick={handleViewAllClick}
@@ -95,9 +92,7 @@ const News = () => {
         </p>
 
         {/* ── Loading ── */}
-        {isLoading && (
-          <NewsLoader message="Loading latest blog posts..." variant="cards" />
-        )}
+        {isLoading && <NewsLoader message="Loading latest blog posts..." variant="cards" />}
 
         {/* ── Error ── */}
         {error && !isLoading && (
@@ -142,14 +137,10 @@ const News = () => {
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleArticleClick(post);
-                    }
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleArticleClick(post); }
                   }}
                   aria-label={`Read article: ${post.title}`}
                 >
-                  {/* Thumbnail */}
                   {post.featuredImage ? (
                     <div className="w-20 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-[#e8e0d0]">
                       <img
@@ -161,13 +152,9 @@ const News = () => {
                     </div>
                   ) : (
                     <div className="w-20 h-16 flex-shrink-0 rounded-lg bg-[#bfa06f]/10 flex items-center justify-center">
-                      <span className="text-[#bfa06f] text-lg font-black">
-                        {post.title.charAt(0)}
-                      </span>
+                      <span className="text-[#bfa06f] text-lg font-black">{post.title.charAt(0)}</span>
                     </div>
                   )}
-
-                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="w-3 h-0.5 bg-[#bfa06f] mb-1" />
                     <h3 className="text-xs font-bold text-[#1a1a1a] leading-snug line-clamp-2 group-hover:text-[#bfa06f] transition-colors duration-200 mb-1">
@@ -200,10 +187,7 @@ const News = () => {
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleArticleClick(post);
-                    }
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleArticleClick(post); }
                   }}
                   aria-label={`Read article: ${post.title}`}
                 >
@@ -219,13 +203,10 @@ const News = () => {
                   )}
                   <div className="p-5">
                     <div className="w-5 h-0.5 bg-[#bfa06f] mb-3 transition-all duration-300 group-hover:w-8" />
-                    <h3 className="font-bold text-[#1a1a1a] leading-snug line-clamp-2 mb-2
-                      text-base lg:text-lg group-hover:text-[#bfa06f] transition-colors duration-200">
+                    <h3 className="font-bold text-[#1a1a1a] leading-snug line-clamp-2 mb-2 text-base lg:text-lg group-hover:text-[#bfa06f] transition-colors duration-200">
                       {post.title}
                     </h3>
-                    <p className="text-[#6a6a6a] text-sm leading-relaxed line-clamp-3 mb-4">
-                      {post.excerpt}
-                    </p>
+                    <p className="text-[#6a6a6a] text-sm leading-relaxed line-clamp-3 mb-4">{post.excerpt}</p>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-3 min-w-0">
                         {post.publishedDate && (
@@ -266,25 +247,13 @@ const News = () => {
       </div>
 
       <style>{`
-        .animate-fade-in-up {
-          animation: fadeInUp 0.5s ease-out forwards;
-        }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(16px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .line-clamp-3 {
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
     </section>
   );
