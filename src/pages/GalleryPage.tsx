@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCache, setCache, clearCache } from '../lib/cache';
+import Footer from '../components/Footer';
 
 type MediaFile = {
   id: string;
@@ -13,7 +14,7 @@ type MediaFile = {
 
 const BUCKET_NAME    = 'gallery';
 const GALLERY_PREFIX = '';
-const CACHE_KEY      = 'gallery_list_v2';   // ← bumped: busts old broken-URL cache
+const CACHE_KEY      = 'gallery_list_v2';
 const CACHE_TTL      = 1000 * 60 * 30;
 
 const isVideo = (name: string) => /\.(mp4|mov|webm|ogg|m4v)$/i.test(name);
@@ -199,7 +200,7 @@ const MediaCard: React.FC<{
   onClick: () => void;
 }> = ({ item, index, tall, onClick }) => {
   const ref = useRef<HTMLElement>(null);
-  const [visible, setVisible]     = useState(false);
+  const [visible, setVisible]         = useState(false);
   const [mediaLoaded, setMediaLoaded] = useState(false);
 
   useEffect(() => {
@@ -290,9 +291,9 @@ const MediaCard: React.FC<{
 // ── Gallery Page ──────────────────────────────────────────────────────────────
 const GalleryPage: React.FC = () => {
   const navigate = useNavigate();
-  const [items, setItems]           = useState<MediaFile[]>(() => getCache<MediaFile[]>(CACHE_KEY) ?? []);
-  const [loading, setLoading]       = useState(!getCache(CACHE_KEY));
-  const [error, setError]           = useState<string | null>(null);
+  const [items, setItems]                 = useState<MediaFile[]>(() => getCache<MediaFile[]>(CACHE_KEY) ?? []);
+  const [loading, setLoading]             = useState(!getCache(CACHE_KEY));
+  const [error, setError]                 = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const loadMedia = useCallback(async (bust = false) => {
@@ -317,8 +318,6 @@ const GalleryPage: React.FC = () => {
         .map((f) => {
           const path = GALLERY_PREFIX ? `${GALLERY_PREFIX}/${f.name}` : f.name;
 
-          // Direct public URL — works on all Supabase plans.
-          // Do NOT use transform options (width/quality) — requires Pro plan.
           const { data: { publicUrl } } = supabase.storage
             .from(BUCKET_NAME)
             .getPublicUrl(path);
@@ -486,6 +485,8 @@ const GalleryPage: React.FC = () => {
 
         </div>
       </main>
+
+      <Footer />
     </>
   );
 };
