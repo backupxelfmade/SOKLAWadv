@@ -13,7 +13,7 @@ type MediaFile = {
 
 const BUCKET_NAME    = 'gallery';
 const GALLERY_PREFIX = '';
-const CACHE_KEY      = 'gallery_list';
+const CACHE_KEY      = 'gallery_list_v2';   // ← bumped: busts old broken-URL cache
 const CACHE_TTL      = 1000 * 60 * 30;
 
 const isVideo = (name: string) => /\.(mp4|mov|webm|ogg|m4v)$/i.test(name);
@@ -69,9 +69,9 @@ const Lightbox: React.FC<{
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape')      onClose();
-      if (e.key === 'ArrowLeft')   onPrev();
-      if (e.key === 'ArrowRight')  onNext();
+      if (e.key === 'Escape')     onClose();
+      if (e.key === 'ArrowLeft')  onPrev();
+      if (e.key === 'ArrowRight') onNext();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -159,7 +159,10 @@ const Lightbox: React.FC<{
               <span
                 key={i}
                 className="block h-1.5 rounded-full transition-all duration-300"
-                style={{ width: i === index ? '20px' : '6px', backgroundColor: i === index ? '#bfa06f' : 'rgba(255,255,255,0.2)' }}
+                style={{
+                  width: i === index ? '20px' : '6px',
+                  backgroundColor: i === index ? '#bfa06f' : 'rgba(255,255,255,0.2)',
+                }}
               />
             ))}
             <button
@@ -196,7 +199,7 @@ const MediaCard: React.FC<{
   onClick: () => void;
 }> = ({ item, index, tall, onClick }) => {
   const ref = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible]     = useState(false);
   const [mediaLoaded, setMediaLoaded] = useState(false);
 
   useEffect(() => {
@@ -258,6 +261,7 @@ const MediaCard: React.FC<{
           alt=""
           loading="lazy"
           onLoad={() => setMediaLoaded(true)}
+          onError={(e) => console.error('❌ Image failed to load:', item.thumbnailUrl, e)}
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           style={{ minHeight: 'inherit', position: 'relative', zIndex: 2 }}
         />
@@ -286,9 +290,9 @@ const MediaCard: React.FC<{
 // ── Gallery Page ──────────────────────────────────────────────────────────────
 const GalleryPage: React.FC = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState<MediaFile[]>(() => getCache<MediaFile[]>(CACHE_KEY) ?? []);
-  const [loading, setLoading] = useState(!getCache(CACHE_KEY));
-  const [error, setError] = useState<string | null>(null);
+  const [items, setItems]           = useState<MediaFile[]>(() => getCache<MediaFile[]>(CACHE_KEY) ?? []);
+  const [loading, setLoading]       = useState(!getCache(CACHE_KEY));
+  const [error, setError]           = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const loadMedia = useCallback(async (bust = false) => {
@@ -313,9 +317,8 @@ const GalleryPage: React.FC = () => {
         .map((f) => {
           const path = GALLERY_PREFIX ? `${GALLERY_PREFIX}/${f.name}` : f.name;
 
-          // ── Single public URL for both grid and lightbox ──────────────────
-          // Note: Supabase image transforms (width/quality) require Pro plan.
-          // Using the direct public URL works on all plans.
+          // Direct public URL — works on all Supabase plans.
+          // Do NOT use transform options (width/quality) — requires Pro plan.
           const { data: { publicUrl } } = supabase.storage
             .from(BUCKET_NAME)
             .getPublicUrl(path);
@@ -323,8 +326,8 @@ const GalleryPage: React.FC = () => {
           return {
             id:           f.id ?? f.name,
             name:         f.name,
-            url:          publicUrl,   // full-res for lightbox
-            thumbnailUrl: publicUrl,   // same URL — no Pro transform needed
+            url:          publicUrl,
+            thumbnailUrl: publicUrl,
             type:         (isVideo(f.name) ? 'video' : 'image') as 'image' | 'video',
           };
         });
@@ -347,9 +350,9 @@ const GalleryPage: React.FC = () => {
   const nextItem = useCallback(() =>
     setLightboxIndex((i) => (i !== null ? (i + 1) % items.length : null)), [items.length]);
 
-  const isTall       = (i: number) => i % 5 === 0;
-  const photoCount   = items.filter((f) => f.type === 'image').length;
-  const videoCount   = items.filter((f) => f.type === 'video').length;
+  const isTall     = (i: number) => i % 5 === 0;
+  const photoCount = items.filter((f) => f.type === 'image').length;
+  const videoCount = items.filter((f) => f.type === 'video').length;
 
   return (
     <>
