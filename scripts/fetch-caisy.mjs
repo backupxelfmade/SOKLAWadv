@@ -1,6 +1,8 @@
 // Node script: Runs ONLY during build, uses server env vars
 import { readFile, writeFile } from 'node:fs/promises';
-import { $fetch } from 'ohmyfetch'; // npm i -D ohmyfetch @types/node
+import { config } from 'dotenv';
+
+config();
 
 const PROJECT_ID = process.env.CAISY_PROJECT_ID;
 const API_KEY = process.env.CAISY_API_KEY;
@@ -12,7 +14,7 @@ if (!PROJECT_ID || !API_KEY) {
 const ENDPOINT = `https://cloud.caisy.io/api/v3/e/${PROJECT_ID}/graphql`;
 
 const fetchFromCaisy = async (query) => {
-  const res = await $fetch(ENDPOINT, {
+  const res = await fetch(ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -20,8 +22,9 @@ const fetchFromCaisy = async (query) => {
     },
     body: JSON.stringify({ query }),
   });
-  if (res.errors) throw new Error(`GraphQL: ${JSON.stringify(res.errors)}`);
-  return res;
+  const data = await res.json();
+  if (data.errors) throw new Error(`GraphQL: ${JSON.stringify(data.errors)}`);
+  return data;
 };
 
 const renderNode = (node) => {
