@@ -101,32 +101,6 @@ function toJsonArray<T>(val: unknown): T[] {
   return [];
 }
 
-function buildWhyChooseUs(s: any): { title: string; description: string }[] {
-  const fromJson = toJsonArray<{ title: string; description: string }>(s.why_choose_us);
-  if (fromJson.length > 0) return fromJson;
-  const result: { title: string; description: string }[] = [];
-  for (let i = 1; i <= 10; i++) {
-    const title = s[`why_choose_us_${i}_title`];
-    const description = s[`why_choose_us_${i}_description`];
-    if (!title) break;
-    result.push({ title, description: description ?? '' });
-  }
-  return result;
-}
-
-function buildProcess(s: any): { title: string; description: string }[] {
-  const fromJson = toJsonArray<{ title: string; description: string }>(s.process);
-  if (fromJson.length > 0) return fromJson;
-  const result: { title: string; description: string }[] = [];
-  for (let i = 1; i <= 10; i++) {
-    const title = s[`process_step_${i}_title`];
-    const description = s[`process_step_${i}_description`];
-    if (!title) break;
-    result.push({ title, description: description ?? '' });
-  }
-  return result;
-}
-
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
@@ -145,19 +119,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           .from('legal_services')
           .select(`
             id, slug, title, excerpt, description,
-            header_image, icon, overview, key_services,
-            why_choose_us,
-            why_choose_us_1_title, why_choose_us_1_description,
-            why_choose_us_2_title, why_choose_us_2_description,
-            why_choose_us_3_title, why_choose_us_3_description,
-            why_choose_us_4_title, why_choose_us_4_description,
-            why_choose_us_5_title, why_choose_us_5_description,
-            process,
-            process_step_1_title, process_step_1_description,
-            process_step_2_title, process_step_2_description,
-            process_step_3_title, process_step_3_description,
-            process_step_4_title, process_step_4_description,
-            process_step_5_title, process_step_5_description
+            header_image, icon, overview,
+            key_services, why_choose_us, process
           `),
 
         supabase
@@ -190,8 +153,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         services: (services.data ?? []).map((s) => ({
           ...s,
           key_services:  toArray(s.key_services),
-          why_choose_us: buildWhyChooseUs(s),
-          process:       buildProcess(s),
+          why_choose_us: toJsonArray<{ title: string; description: string }>(s.why_choose_us),
+          process:       toJsonArray<{ title: string; description: string }>(s.process),
         })),
 
         team: (team.data ?? []).map((m) => ({
