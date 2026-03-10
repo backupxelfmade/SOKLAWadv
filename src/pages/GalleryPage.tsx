@@ -1,20 +1,20 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { getCache, setCache, clearCache } from '../lib/cache'; // ← NEW
+import { getCache, setCache, clearCache } from '../lib/cache';
 
 type MediaFile = {
   id: string;
   name: string;
-  url: string;           // Full-res — used in Lightbox
-  thumbnailUrl: string;  // Resized — used in grid cards (NEW)
+  url: string;
+  thumbnailUrl: string;
   type: 'image' | 'video';
 };
 
-const BUCKET_NAME   = 'gallery';
+const BUCKET_NAME    = 'gallery';
 const GALLERY_PREFIX = '';
-const CACHE_KEY     = 'gallery_list';
-const CACHE_TTL     = 1000 * 60 * 30; // 30 minutes
+const CACHE_KEY      = 'gallery_list';
+const CACHE_TTL      = 1000 * 60 * 30;
 
 const isVideo = (name: string) => /\.(mp4|mov|webm|ogg|m4v)$/i.test(name);
 const isImage = (name: string) => /\.(jpe?g|png|webp|gif|avif)$/i.test(name);
@@ -69,9 +69,9 @@ const Lightbox: React.FC<{
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft') onPrev();
-      if (e.key === 'ArrowRight') onNext();
+      if (e.key === 'Escape')      onClose();
+      if (e.key === 'ArrowLeft')   onPrev();
+      if (e.key === 'ArrowRight')  onNext();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -125,7 +125,7 @@ const Lightbox: React.FC<{
         {item.type === 'video' ? (
           <video
             key={item.url}
-            src={item.url}               // Always full-res for video
+            src={item.url}
             controls autoPlay
             className="max-h-[82vh] w-full rounded-2xl shadow-2xl bg-black"
             style={{ animation: 'fadeIn 0.3s ease' }}
@@ -133,7 +133,7 @@ const Lightbox: React.FC<{
         ) : (
           <img
             key={item.url}
-            src={item.url}               // ← Full-res URL in lightbox
+            src={item.url}
             alt=""
             onLoad={() => setImgLoaded(true)}
             className="max-h-[82vh] w-full object-contain rounded-2xl shadow-2xl"
@@ -232,7 +232,7 @@ const MediaCard: React.FC<{
       {item.type === 'video' ? (
         <>
           <video
-            src={`${item.url}#t=0.5`}   // Always use full URL for video preview
+            src={`${item.url}#t=0.5`}
             muted playsInline preload="metadata"
             onLoadedData={() => setMediaLoaded(true)}
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
@@ -254,7 +254,7 @@ const MediaCard: React.FC<{
         </>
       ) : (
         <img
-          src={item.thumbnailUrl}        // ← Resized thumbnail in grid (saves bandwidth)
+          src={item.thumbnailUrl}
           alt=""
           loading="lazy"
           onLoad={() => setMediaLoaded(true)}
@@ -263,8 +263,10 @@ const MediaCard: React.FC<{
         />
       )}
 
-      <div className="absolute inset-0 rounded-2xl pointer-events-none z-[4] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{ boxShadow: 'inset 0 0 0 2px rgba(191,160,111,0.55)' }} />
+      <div
+        className="absolute inset-0 rounded-2xl pointer-events-none z-[4] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{ boxShadow: 'inset 0 0 0 2px rgba(191,160,111,0.55)' }}
+      />
 
       {item.type === 'image' && (
         <div className="absolute inset-x-0 bottom-0 z-[3] px-3 pb-3 flex items-end justify-end
@@ -284,16 +286,14 @@ const MediaCard: React.FC<{
 // ── Gallery Page ──────────────────────────────────────────────────────────────
 const GalleryPage: React.FC = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState<MediaFile[]>(() => getCache<MediaFile[]>(CACHE_KEY) ?? []); // ← seed from cache
-  const [loading, setLoading] = useState(!getCache(CACHE_KEY));                                  // ← skip load if cached
+  const [items, setItems] = useState<MediaFile[]>(() => getCache<MediaFile[]>(CACHE_KEY) ?? []);
+  const [loading, setLoading] = useState(!getCache(CACHE_KEY));
   const [error, setError] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const loadMedia = useCallback(async (bust = false) => {
-    // If busting cache (manual refresh), clear stored list first
     if (bust) clearCache(CACHE_KEY);
 
-    // Return early if valid cache exists and not forced
     const cached = getCache<MediaFile[]>(CACHE_KEY);
     if (cached && !bust) { setItems(cached); setLoading(false); return; }
 
@@ -312,31 +312,25 @@ const GalleryPage: React.FC = () => {
         .filter((f) => !f.name.startsWith('.') && (isImage(f.name) || isVideo(f.name)))
         .map((f) => {
           const path = GALLERY_PREFIX ? `${GALLERY_PREFIX}/${f.name}` : f.name;
-          const isTallCard = false; // thumbnails are uniform; tall is layout-only
 
-          // Full-res URL (for lightbox)
-          const { data: { publicUrl: fullUrl } } = supabase.storage
+          // ── Single public URL for both grid and lightbox ──────────────────
+          // Note: Supabase image transforms (width/quality) require Pro plan.
+          // Using the direct public URL works on all plans.
+          const { data: { publicUrl } } = supabase.storage
             .from(BUCKET_NAME)
             .getPublicUrl(path);
-
-          // Thumbnail URL (for grid — smaller, faster) — Pro plan feature
-          const { data: { publicUrl: thumbUrl } } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(path, {
-              transform: { width: 600, quality: 75 },
-            });
 
           return {
             id:           f.id ?? f.name,
             name:         f.name,
-            url:          fullUrl,   // full-res for lightbox
-            thumbnailUrl: thumbUrl,  // compressed for grid
+            url:          publicUrl,   // full-res for lightbox
+            thumbnailUrl: publicUrl,   // same URL — no Pro transform needed
             type:         (isVideo(f.name) ? 'video' : 'image') as 'image' | 'video',
           };
         });
 
       setItems(media);
-      setCache(CACHE_KEY, media, CACHE_TTL); // ← Persist list for 30 min
+      setCache(CACHE_KEY, media, CACHE_TTL);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load media.');
     } finally {
@@ -353,22 +347,30 @@ const GalleryPage: React.FC = () => {
   const nextItem = useCallback(() =>
     setLightboxIndex((i) => (i !== null ? (i + 1) % items.length : null)), [items.length]);
 
-  const isTall = (i: number) => i % 5 === 0;
-  const photoCount = items.filter((f) => f.type === 'image').length;
-  const videoCount = items.filter((f) => f.type === 'video').length;
+  const isTall       = (i: number) => i % 5 === 0;
+  const photoCount   = items.filter((f) => f.type === 'image').length;
+  const videoCount   = items.filter((f) => f.type === 'video').length;
 
   return (
     <>
       <GlobalStyles />
 
       {lightboxIndex !== null && (
-        <Lightbox items={items} index={lightboxIndex} onClose={closeLightbox} onPrev={prevItem} onNext={nextItem} />
+        <Lightbox
+          items={items}
+          index={lightboxIndex}
+          onClose={closeLightbox}
+          onPrev={prevItem}
+          onNext={nextItem}
+        />
       )}
 
-      {/* ── Blue Banner ── */}
+      {/* ── Banner ── */}
       <section className="relative bg-[#0d1e35] overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '28px 28px' }}
+        />
         <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#bfa06f] to-transparent" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-28 sm:pt-36 pb-10 sm:pb-14">
@@ -388,8 +390,10 @@ const GalleryPage: React.FC = () => {
             <p className="text-[10px] sm:text-xs font-semibold tracking-[0.3em] text-[#bfa06f] uppercase">Media</p>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3"
-            style={{ animation: 'fadeUp 0.5s ease 0.2s both' }}>
+          <div
+            className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3"
+            style={{ animation: 'fadeUp 0.5s ease 0.2s both' }}
+          >
             <div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif text-white/90 leading-tight mb-2">Gallery</h1>
               <p className="text-sm text-white/45 max-w-lg leading-relaxed">
@@ -397,8 +401,10 @@ const GalleryPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap"
-              style={{ animation: 'fadeIn 0.5s ease 0.4s both' }}>
+            <div
+              className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap"
+              style={{ animation: 'fadeIn 0.5s ease 0.4s both' }}
+            >
               {!loading && photoCount > 0 && (
                 <span className="text-[11px] font-medium text-[#bfa06f] border border-[#bfa06f]/30 rounded-full px-3 py-1">
                   {photoCount} photo{photoCount !== 1 ? 's' : ''}
@@ -409,7 +415,6 @@ const GalleryPage: React.FC = () => {
                   {videoCount} video{videoCount !== 1 ? 's' : ''}
                 </span>
               )}
-              {/* Refresh button — clears cache and re-fetches */}
               <button
                 onClick={() => loadMedia(true)}
                 disabled={loading}
@@ -428,13 +433,15 @@ const GalleryPage: React.FC = () => {
         <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-b from-transparent to-[#f9f7f1]/5 pointer-events-none" />
       </section>
 
-      {/* ── Page Content ── */}
+      {/* ── Content ── */}
       <main className="bg-[#f9f7f1] min-h-screen pb-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-8 sm:pt-10">
 
           {error && (
-            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700"
-              style={{ animation: 'fadeUp 0.4s ease' }}>
+            <div
+              className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700"
+              style={{ animation: 'fadeUp 0.4s ease' }}
+            >
               {error}
             </div>
           )}
@@ -446,8 +453,10 @@ const GalleryPage: React.FC = () => {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-28 text-center"
-              style={{ animation: 'fadeUp 0.5s ease' }}>
+            <div
+              className="flex flex-col items-center justify-center py-28 text-center"
+              style={{ animation: 'fadeUp 0.5s ease' }}
+            >
               <div className="h-16 w-16 rounded-full bg-[#bfa06f]/10 flex items-center justify-center mb-4">
                 <svg className="h-7 w-7 text-[#bfa06f]/50" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5M3 3h18" />
