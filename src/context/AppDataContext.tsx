@@ -66,7 +66,7 @@ type AppDataContextType = {
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
-const CACHE_KEY = 'site_data_v2';          // ← bumped from v1 to bust stale cache
+const CACHE_KEY = 'site_data_v3';          // ← bumped to v3 to bust stale cache
 const CACHE_TTL = 1000 * 60 * 60;          // 1 hour
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
