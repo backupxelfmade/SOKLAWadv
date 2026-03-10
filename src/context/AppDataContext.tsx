@@ -75,7 +75,7 @@ type AppDataContextType = {
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
-const CACHE_KEY = 'site_data_v8';   // ← bumped: picks up teamCategories
+const CACHE_KEY = 'site_data_v9';   // ← bumped: picks up toArray fix
 const CACHE_TTL = 1000 * 60 * 60;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -84,11 +84,24 @@ function toArray(val: unknown): string[] {
   if (!val) return [];
   if (Array.isArray(val)) return val;
   if (typeof val === 'string') {
+    const s = val.trim();
+
+    // PostgreSQL array literal: {"Divorce and Separation","Child Custody"}
+    if (s.startsWith('{') && s.endsWith('}')) {
+      return s
+        .slice(1, -1)
+        .match(/("(?:[^"\\]|\\.)*"|[^,]+)/g)
+        ?.map((item) => item.replace(/^"|"$/g, '').trim())
+        .filter(Boolean) ?? [];
+    }
+
+    // JSON array: ["Divorce and Separation","Child Custody"]
     try {
-      const parsed = JSON.parse(val);
-      return Array.isArray(parsed) ? parsed : [val];
+      const parsed = JSON.parse(s);
+      return Array.isArray(parsed) ? parsed : [s];
     } catch {
-      return val.split(',').map((s) => s.trim()).filter(Boolean);
+      // Plain comma-separated fallback
+      return s.split(',').map((x) => x.trim()).filter(Boolean);
     }
   }
   return [];
