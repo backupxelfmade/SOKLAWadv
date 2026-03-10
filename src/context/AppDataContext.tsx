@@ -14,14 +14,8 @@ export type Service = {
   icon?: string;
   overview?: string;
   key_services?: string[];
-  why_choose_us?: {
-    title: string;
-    description: string;
-  }[];
-  process?: {
-    title: string;
-    description: string;
-  }[];
+  why_choose_us?: { title: string; description: string }[];
+  process?: { title: string; description: string }[];
 };
 
 export type TeamMember = {
@@ -52,7 +46,6 @@ export type Career = {
   location?: string;
   type?: string;
   experience?: string;
-  deadline?: string;
   is_active?: boolean;
 };
 
@@ -76,6 +69,38 @@ const AppDataContext = createContext<AppDataContextType | null>(null);
 const CACHE_KEY = 'site_data';
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+// Safely normalize any DB value into a string[]
+function toArray(val: unknown): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [val];
+    } catch {
+      return val.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
+// Safely normalize jsonb columns into typed arrays
+function toJsonArray<T>(val: unknown): T[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val as T[];
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
@@ -91,7 +116,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       const [services, team, careers] = await Promise.all([
 
         supabase
-          .from('legal_services')          // ← correct table name
+          .from('legal_services')
           .select(`
             id,
             slug,
@@ -107,7 +132,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           `),
 
         supabase
-          .from('team_members')            // ← correct table name
+          .from('team_members')
           .select(`
             id,
             name,
@@ -129,7 +154,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           `),
 
         supabase
-          .from('job_positions')           // ← correct table name
+          .from('job_positions')
           .select(`
             id,
             title,
@@ -138,7 +163,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             location,
             type,
             experience,
-            deadline,
             is_active
           `),
 
@@ -149,9 +173,24 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       if (careers.error)  throw careers.error;
 
       const result: AppData = {
-        services: services.data ?? [],
-        team:     team.data     ?? [],
-        careers:  careers.data  ?? [],
+        services: (services.data ?? []).map((s) => ({
+          ...s,
+          key_services:  toArray(s.key_services),
+          why_choose_us: toJsonArray<{ title: string; description: string }>(s.why_choose_us),
+          process:       toJsonArray<{ title: string; description: string }>(s.process),
+        })),
+
+        team: (team.data ?? []).map((m) => ({
+          ...m,
+          expertise:      toArray(m.expertise),
+          education:      toArray(m.education),
+          achievements:   toArray(m.achievements),
+          languages:      toArray(m.languages),
+          admissions:     toArray(m.admissions),
+          qualifications: toArray(m.qualifications),
+        })),
+
+        careers: careers.data ?? [],
       };
 
       setData(result);
@@ -174,7 +213,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ── Internal hook ─────────────────────────────────────────────────────────────
+// ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useAppData() {
   const ctx = useContext(AppDataContext);
