@@ -153,10 +153,10 @@ ${formData.message}
                     <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#bfa06f]" />
                   </div>
                   <a
-                    href="tel:+254205285048"
+                    href="tel:+254705263776"
                     className="text-xs sm:text-sm text-[#4a4a4a] hover:text-[#bfa06f] transition-colors"
                   >
-                    +254 (0) 20 5285048
+                    +254 705 263 776
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
