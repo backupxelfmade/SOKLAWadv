@@ -66,12 +66,11 @@ type AppDataContextType = {
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
-const CACHE_KEY = 'site_data';
-const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+const CACHE_KEY = 'site_data_v2';          // ← bumped from v1 to bust stale cache
+const CACHE_TTL = 1000 * 60 * 60;          // 1 hour
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Safely normalize any DB value into a string[]
 function toArray(val: unknown): string[] {
   if (!val) return [];
   if (Array.isArray(val)) return val;
@@ -86,7 +85,6 @@ function toArray(val: unknown): string[] {
   return [];
 }
 
-// Safely normalize jsonb columns into typed arrays
 function toJsonArray<T>(val: unknown): T[] {
   if (!val) return [];
   if (Array.isArray(val)) return val as T[];
