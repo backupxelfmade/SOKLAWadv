@@ -399,7 +399,7 @@ const GalleryPage: React.FC = () => {
             <div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif text-white/90 leading-tight mb-2">Gallery</h1>
               <p className="text-sm text-white/45 max-w-lg leading-relaxed">
-                Browse visual highlights from our practice, curated and stored securely in Supabase Storage.
+                Browse visual highlights from our practice.
               </p>
             </div>
 
