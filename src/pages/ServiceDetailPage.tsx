@@ -177,7 +177,7 @@ const ServiceDetailPage = () => {
         {/* ── Mobile CTA strip ── */}
         <div className="sm:hidden bg-[#f9f7f1] border-b border-[#e8e0d0] px-3 py-2 flex items-center gap-1.5 w-full">
           <a
-            href="tel:+254205285048"
+            href="tel:+254705263776"
             className="flex-1 min-w-0 flex items-center justify-center gap-1 bg-white border border-[#e8e0d0] rounded-lg py-2 text-[0.6rem] font-semibold text-[#4a4a4a]"
           >
             <Phone className="h-2.5 w-2.5 text-[#bfa06f] flex-shrink-0" />
@@ -329,14 +329,14 @@ const ServiceDetailPage = () => {
                 </p>
                 <div className="space-y-2 mb-4">
                   <a
-                    href="tel:+254205285048"
+                    href="tel:+254705263776"
                     className="flex items-center gap-2.5 bg-white border border-[#e8e0d0] hover:border-[#bfa06f]/40 rounded-xl px-3 py-2.5 transition-colors group"
                   >
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#bfa06f]/10 flex-shrink-0">
                       <Phone className="h-3 w-3 text-[#bfa06f]" />
                     </div>
                     <span className="text-sm text-[#4a4a4a] group-hover:text-[#bfa06f] transition-colors min-w-0 truncate">
-                      +254 (0) 20 5285048
+                      +254 705 263 776
                     </span>
                   </a>
                   <a
