@@ -94,7 +94,7 @@ const WhatsAppButton = () => {
   const lastScrollY     = useRef(0);
   const lastShownAt     = useRef(0);
 
-  const phoneNumber    = '+254720738641';
+  const phoneNumber    = '+254705263776';
   const defaultMessage = 'Hello, I would like to inquire about your legal services.';
   const MAX_CHECKINS   = 3;
   const MIN_GAP_MS     = 25000;
