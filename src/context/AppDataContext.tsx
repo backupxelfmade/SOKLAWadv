@@ -68,7 +68,7 @@ type AppDataContextType = {
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
-const CACHE_KEY = 'site_data_v6';
+const CACHE_KEY = 'site_data_v7';
 const CACHE_TTL = 1000 * 60 * 60;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
