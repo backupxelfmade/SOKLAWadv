@@ -91,7 +91,7 @@ const CareersPage = () => {
           <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <span className="block h-px w-5 sm:w-8 bg-[#bfa06f] flex-shrink-0 transition-all" />
             <span className="text-[0.6rem] sm:text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[#bfa06f]">
-              Careers at SOK Law
+              Careers at SOKLaw
             </span>
           </div>
           <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.1] tracking-tight max-w-2xl">
@@ -99,7 +99,7 @@ const CareersPage = () => {
           </h1>
           <div className="hidden sm:block w-12 h-0.5 bg-[#bfa06f]/40 mt-5 mb-5" />
           <p className="hidden sm:block text-sm sm:text-base text-white/55 max-w-lg leading-relaxed">
-            SOK Law is built on people — sharp, committed advocates who take their work seriously
+            SOKLaw is built on people sharp, committed advocates who take their work seriously
             and support each other genuinely. If that sounds like you, we'd like to talk.
           </p>
           <div className="hidden sm:flex items-center gap-8 mt-8 pt-8 border-t border-white/10">
@@ -125,14 +125,14 @@ const CareersPage = () => {
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
               <span className="block h-px w-4 sm:w-6 bg-[#bfa06f] flex-shrink-0" />
               <span className="text-[0.6rem] sm:text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[#bfa06f]">
-                Why SOK Law
+                Why SOKLaw
               </span>
             </div>
             <h2 className="text-base sm:text-2xl lg:text-3xl font-bold text-[#0d2340] leading-tight">
               What You Actually Get Here
             </h2>
             <p className="hidden sm:block text-sm text-[#6a6a6a] max-w-md mt-2 leading-relaxed">
-              Not perks on a brochure — real things that matter to the people who work here.
+              Not perks on a brochure real things that matter to the people who work here.
             </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
@@ -419,7 +419,7 @@ const CareersPage = () => {
                   <GraduationCap className="h-3.5 w-3.5 text-[#bfa06f]" />
                 </div>
                 <h2 className="text-xs sm:text-base font-bold text-[#0d2340]">
-                  Internship & Pupillage at SOK Law
+                  Internship & Pupillage at SOKLaw
                 </h2>
               </div>
               <button
