@@ -8,12 +8,12 @@ export type Service = {
   id: string;
   slug?: string;
   title: string;
-  excerpt?: string;           // hover text on ServicesPage cards
-  description?: string;       // hero subtitle on ServiceDetailPage
-  header_image?: string;      // background image on ServicesPage cards
-  icon?: string;              // Lucide icon name on ServiceDetailPage
-  overview?: string;          // Overview section
-  key_services?: string[];    // Key Services checklist
+  excerpt?: string;
+  description?: string;
+  header_image?: string;
+  icon?: string;
+  overview?: string;
+  key_services?: string[];
   why_choose_us?: {
     title: string;
     description: string;
@@ -28,32 +28,32 @@ export type TeamMember = {
   id: string;
   name: string;
   role: string;
-  category?: string;          // Partners / Associates / etc.
+  category?: string;
   image?: string;
-  specialization?: string;    // subtitle on card
+  specialization?: string;
   email?: string;
   phone?: string;
   linkedin?: string;
-  description?: string;       // About section in modal
-  experience?: string;        // Experience section in modal
-  expertise?: string[];       // Areas of Expertise tags
-  education?: string[];       // Education list
-  achievements?: string[];    // Key Achievements list
-  languages?: string[];       // Languages — TeamDirectory detail view
-  admissions?: string[];      // Bar admissions — TeamDirectory detail view
-  qualifications?: string[];  // Short credential pills on directory card
+  description?: string;
+  experience?: string;
+  expertise?: string[];
+  education?: string[];
+  achievements?: string[];
+  languages?: string[];
+  admissions?: string[];
+  qualifications?: string[];
 };
 
 export type Career = {
   id: string;
   title: string;
   description: string;
-  department?: string;        // shown under title on position card
-  location?: string;          // MapPin badge
-  type?: string;              // Clock badge (Full-time, Part-time, etc.)
-  experience?: string;        // Briefcase badge
+  department?: string;
+  location?: string;
+  type?: string;
+  experience?: string;
   deadline?: string;
-  is_active?: boolean;        // filters inactive positions client-side
+  is_active?: boolean;
 };
 
 type AppData = {
@@ -91,7 +91,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       const [services, team, careers] = await Promise.all([
 
         supabase
-          .from('services')
+          .from('legal_services')          // ← correct table name
           .select(`
             id,
             slug,
@@ -107,7 +107,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           `),
 
         supabase
-          .from('team')
+          .from('team_members')            // ← correct table name
           .select(`
             id,
             name,
@@ -129,7 +129,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           `),
 
         supabase
-          .from('careers')
+          .from('job_positions')           // ← correct table name
           .select(`
             id,
             title,
