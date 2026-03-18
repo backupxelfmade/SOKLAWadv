@@ -59,6 +59,7 @@ const ContactPage = () => {
     return Object.keys(errors).length === 0;
   };
 
+  // ── ✅ ONLY CHANGE: Gmail Compose URL replaces window.location.href mailto ──
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) { setSubmitStatus('validation_error'); return; }
@@ -78,7 +79,13 @@ Message:
 ${formData.message}
       `.trim();
       const subject = `New Legal Consultation Request — ${formData.firstName} ${formData.lastName}`;
-      window.location.href = `mailto:Info@soklaw.co.ke?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+
+      window.open(
+        `https://mail.google.com/mail/?view=cm&fs=1&to=Info@soklaw.co.ke` +
+        `&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`,
+        '_blank'
+      );
+
       setSubmitStatus('success');
       setFormData({ firstName: '', lastName: '', email: '', phone: '', legalService: '', message: '' });
       setValidationErrors({});
@@ -338,7 +345,7 @@ ${formData.message}
                 {isSubmitting ? (
                   <>
                     <span className="animate-spin h-4 w-4 border-2 border-white/40 border-t-white rounded-full" />
-                    <span>Sending…</span>
+                    <span>Opening Gmail…</span>
                   </>
                 ) : (
                   <>
@@ -363,9 +370,9 @@ ${formData.message}
               <div className="mt-4 flex items-start gap-3 bg-[#bfa06f]/8 border border-[#bfa06f]/30 rounded-xl px-4 py-3">
                 <CheckCircle className="h-4 w-4 text-[#bfa06f] mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-[#0d2340]">Email client opened</p>
+                  <p className="text-xs font-semibold text-[#0d2340]">Gmail opened in a new tab</p>
                   <p className="text-[0.65rem] text-[#4a4a4a] mt-0.5">
-                    Please send the email to complete your inquiry. We'll respond within 24 hours.
+                    Your message is pre-filled — just click Send in Gmail to complete your inquiry.
                   </p>
                 </div>
               </div>
@@ -374,9 +381,10 @@ ${formData.message}
               <div className="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                 <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-red-800">Unable to open email client</p>
+                  <p className="text-xs font-semibold text-red-800">Unable to open Gmail</p>
                   <p className="text-[0.65rem] text-red-700 mt-0.5">
-                    Please email us directly at Info@soklaw.co.ke
+                    Please email us directly at{' '}
+                    <a href="mailto:Info@soklaw.co.ke" className="underline">Info@soklaw.co.ke</a>
                   </p>
                 </div>
               </div>
