@@ -46,7 +46,7 @@ const Footer = () => {
 
   const socialLinks = [
     { Icon: XIcon,         href: 'https://twitter.com/SOK_Law',             label: 'X (Twitter)' },
-    { Icon: LinkedinIcon,  href: 'https://www.linkedin.com/company/soklaw', label: 'LinkedIn'    },
+    { Icon: LinkedinIcon,  href: 'https://www.linkedin.com/company/soklaw-advocates', label: 'LinkedIn'    },
     { Icon: InstagramIcon, href: 'https://www.instagram.com/soklaw',        label: 'Instagram'   },
   ];
 
