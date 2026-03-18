@@ -76,8 +76,8 @@ type AppDataContextType = {
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
-const CACHE_KEY = 'site_data_v10';  // ← bumped: picks up display_order fix
-const CACHE_TTL = 1000 * 60 * 60;
+const CACHE_KEY = 'site_data_v11';      // ← bumped: instant updates fix
+const CACHE_TTL = 1000 * 60 * 5;       // ← 5 min (was 1 hour)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -86,8 +86,6 @@ function toArray(val: unknown): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === 'string') {
     const s = val.trim();
-
-    // PostgreSQL array literal: {"Divorce and Separation","Child Custody"}
     if (s.startsWith('{') && s.endsWith('}')) {
       return s
         .slice(1, -1)
@@ -95,8 +93,6 @@ function toArray(val: unknown): string[] {
         ?.map((item) => item.replace(/^"|"$/g, '').trim())
         .filter(Boolean) ?? [];
     }
-
-    // JSON array: ["Divorce and Separation","Child Custody"]
     try {
       const parsed = JSON.parse(s);
       return Array.isArray(parsed) ? parsed : [s];
@@ -125,11 +121,12 @@ function toJsonArray<T>(val: unknown): T[] {
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<AppData | null>(() => getCache<AppData>(CACHE_KEY));
-  const [loading, setLoading] = useState(!getCache(CACHE_KEY));
+  const [loading, setLoading] = useState(!getCache(CACHE_KEY)); // Only show loader if no cache
   const [error, setError] = useState<string | null>(null);
 
   async function fetchAll() {
-    setLoading(true);
+    // If cache exists show it instantly, refetch silently in background
+    if (!getCache(CACHE_KEY)) setLoading(true);
     setError(null);
 
     try {
@@ -142,8 +139,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             header_image, icon, overview, display_order,
             key_services, why_choose_us, process
           `)
-          .order('display_order', { ascending: true })  // ← Fixed
-          .order('title',         { ascending: true }), // ← Fallback
+          .order('display_order', { ascending: true })
+          .order('title',         { ascending: true }),
 
         supabase
           .from('team_members')
@@ -210,7 +207,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    if (!data) fetchAll();
+    fetchAll(); // ← Always refetch: shows cache instantly, updates silently
   }, []);
 
   return (
