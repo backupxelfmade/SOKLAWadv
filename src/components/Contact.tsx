@@ -142,7 +142,7 @@ ${formData.message}
                     <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#bfa06f]" />
                   </div>
                   <p className="text-xs sm:text-sm text-[#4a4a4a] leading-relaxed whitespace-pre-line">
-                    {'Upperhill Gardens, Block D11, 3rd Ngong Avenue\nMilimani Area opp Kenya Bankers'}
+                    {'Upperhill Gardens, Block D11, 3rd Ngong Avenue\nMilimani Area opp Kenya Bankers Sacco'}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -179,8 +179,8 @@ ${formData.message}
               <div className="space-y-2">
                 {[
                   { day: 'Monday – Friday', hours: '8:00 AM – 6:00 PM' },
-                  { day: 'Saturday',        hours: '9:00 AM – 2:00 PM' },
-                  { day: 'Sunday',          hours: 'Emergency Only' },
+                  { day: 'Saturday',        hours: 'On Prior Appointment' },
+                  { day: 'Sunday',          hours: 'On prior Appointment' },
                 ].map(({ day, hours }) => (
                   <div key={day} className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
