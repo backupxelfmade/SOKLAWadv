@@ -135,7 +135,7 @@ ${formData.message}
                     <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#bfa06f]" />
                   </div>
                   <p className="text-xs sm:text-sm text-[#4a4a4a] leading-relaxed whitespace-pre-line">
-                    {'Upperhill Gardens, Block D11, 3rd Ngong Avenue\nMilimani Area opp Kenya National Library Service'}
+                    {'Upperhill Gardens, Block D11, 3rd Ngong Avenue\nMilimani Area opp Kenya Bankers'}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
