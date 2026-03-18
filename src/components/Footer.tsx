@@ -170,7 +170,7 @@ const Footer = () => {
                 <MapPin className="h-3.5 w-3.5 text-[#bfa06f] mt-0.5 flex-shrink-0" />
                 <span className="text-[0.7rem] sm:text-sm text-[#4a4a4a] leading-relaxed">
                   Upperhill Gardens, Block D11, 3rd Ngong Avenue,
-                  Milimani Area opp Kenya National Library Service
+                  Milimani Area opp Kenya Bankers Sacco.
                 </span>
               </li>
               <li className="flex items-center gap-2.5">
