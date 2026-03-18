@@ -13,7 +13,7 @@ const Footer = () => {
     { label: 'Legal Services', href: '/services', isRoute: true  },
     { label: 'Careers',        href: '/careers',  isRoute: true  },
     { label: 'Contact Us',     href: '/contact',  isRoute: true  },
-    { label: 'Blog',           href: '#news',     isRoute: false },
+    { label: 'Insights',           href: '#news',     isRoute: false },
   ];
 
   const legalServices = [
