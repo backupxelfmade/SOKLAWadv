@@ -114,7 +114,7 @@ const About = () => {
                 <Award className="h-3 w-3 sm:h-4 sm:w-4 text-[#bfa06f]" />
               </div>
               <div>
-                <p className="text-[10px] sm:text-xs font-bold text-[#0d2340] leading-tight">Est. 2009</p>
+                <p className="text-[10px] sm:text-xs font-bold text-[#0d2340] leading-tight">Est. 2014</p>
                 <p className="text-[8px] sm:text-[10px] text-[#6a6a6a] leading-tight">15+ years of practice</p>
               </div>
             </div>
@@ -136,7 +136,7 @@ const About = () => {
             {/* Body copy */}
             <div className="anim-item space-y-2 sm:space-y-4">
               <h3 className="text-base sm:text-xl md:text-2xl font-bold text-[#0d2340]">
-                Excellence in Legal Practice Since 2009
+                Excellence in Legal Practice Since 2014
               </h3>
               <p className="text-[#4a4a4a] leading-relaxed text-xs sm:text-base">
                 SOKLaw Advocates has been at the forefront of legal practice in Kenya,
