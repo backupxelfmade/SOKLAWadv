@@ -152,7 +152,7 @@ ${formData.message}
                   </div>
                   <p className="text-xs sm:text-sm text-[#4a4a4a] leading-relaxed">
                     Upperhill Gardens, Block D11, 3rd Ngong Avenue<br />
-                    Milimani Area opp Kenya Bankers
+                    Milimani Area opp Kenya Bankers Sacco
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -189,8 +189,8 @@ ${formData.message}
               <div className="space-y-2">
                 {[
                   { day: 'Monday – Friday', hours: '8:00 AM – 6:00 PM' },
-                  { day: 'Saturday',        hours: '9:00 AM – 2:00 PM' },
-                  { day: 'Sunday',          hours: 'Emergency Only' },
+                  { day: 'Saturday',        hours: 'On Prior Appointment' },
+                  { day: 'Sunday',          hours: 'On Prior Appointment' },
                 ].map(({ day, hours }) => (
                   <div key={day} className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
