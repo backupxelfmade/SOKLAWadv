@@ -13,6 +13,7 @@ export type Service = {
   header_image?: string;
   icon?: string;
   overview?: string;
+  display_order?: number;
   key_services?: string[];
   why_choose_us?: { title: string; description: string }[];
   process?: { title: string; description: string }[];
@@ -75,7 +76,7 @@ type AppDataContextType = {
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
-const CACHE_KEY = 'site_data_v9';   // ← bumped: picks up toArray fix
+const CACHE_KEY = 'site_data_v10';  // ← bumped: picks up display_order fix
 const CACHE_TTL = 1000 * 60 * 60;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -90,7 +91,7 @@ function toArray(val: unknown): string[] {
     if (s.startsWith('{') && s.endsWith('}')) {
       return s
         .slice(1, -1)
-        .match(/("(?:[^"\\]|\\.)*"|[^,]+)/g)
+        .match(/("(?:[^"\\\\]|\\\\.)*"|[^,]+)/g)
         ?.map((item) => item.replace(/^"|"$/g, '').trim())
         .filter(Boolean) ?? [];
     }
@@ -100,7 +101,6 @@ function toArray(val: unknown): string[] {
       const parsed = JSON.parse(s);
       return Array.isArray(parsed) ? parsed : [s];
     } catch {
-      // Plain comma-separated fallback
       return s.split(',').map((x) => x.trim()).filter(Boolean);
     }
   }
@@ -139,9 +139,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           .from('legal_services')
           .select(`
             id, slug, title, excerpt, description,
-            header_image, icon, overview,
+            header_image, icon, overview, display_order,
             key_services, why_choose_us, process
-          `),
+          `)
+          .order('display_order', { ascending: true })  // ← Fixed
+          .order('title',         { ascending: true }), // ← Fallback
 
         supabase
           .from('team_members')
