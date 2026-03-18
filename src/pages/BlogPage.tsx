@@ -134,7 +134,7 @@ const BlogPage: React.FC = () => {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 sm:mb-2">
-              Blog
+              Insights
             </h1>
             <p className="text-[0.7rem] sm:text-sm text-white/50 max-w-md">
               Insights, updates, and expertise from our team
