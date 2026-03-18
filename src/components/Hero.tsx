@@ -229,7 +229,7 @@ const Hero = () => {
 
             <a
               href="tel:+254705263776"
-              style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}
+              style={{ color: 'white', textDecoration: 'none' }}
               className="group flex items-center justify-center gap-2 border border-white/25 hover:border-white/55 hover:bg-white/10 hover:!text-white font-semibold text-sm sm:text-[0.95rem] px-6 sm:px-8 py-3.5 rounded-full backdrop-blur-sm transition-all duration-200"
             >
               <Phone className="h-4 w-4 flex-shrink-0" style={{ color: '#bfa06f' }} />
