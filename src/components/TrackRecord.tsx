@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Shield, Users, Lightbulb, Award } from 'lucide-react';
 
 const stats = [
-  { num: '15', suffix: '+', label: 'Years of practice' },
+  { num: '12', suffix: '+', label: 'Years of practice' },
   { num: '98', suffix: '%', label: 'Case success rate' },
   { num: '1K', suffix: '+', label: 'Satisfied clients' },
   { num: '14', suffix: '',  label: 'Practice areas'   },
@@ -12,7 +12,7 @@ const pillars = [
   {
     icon: Shield,
     title: 'Proven Legal Expertise',
-    body: 'Deep knowledge across 14 practice areas — from commercial litigation to family succession — grounded in 15 years of Kenyan legal practice.',
+    body: 'Deep knowledge across 14 practice areas — from commercial litigation to family succession — grounded in 12+ years of Kenyan legal practice.',
   },
   {
     icon: Users,
@@ -109,14 +109,14 @@ const WhyChooseUs = () => {
               <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
                 <span className="block h-px w-4 bg-[#bfa06f] flex-shrink-0" />
                 <span className="text-[0.55rem] sm:text-[0.65rem] font-semibold uppercase tracking-widest text-[#bfa06f]">
-                  Established 2009
+                  Established 2014
                 </span>
               </div>
               <h3 className="text-white font-bold text-sm sm:text-xl lg:text-2xl leading-tight">
                 A Legacy of Legal Excellence
               </h3>
               <p className="hidden sm:block text-white/65 text-xs sm:text-sm mt-1.5 leading-relaxed max-w-sm">
-                Over 15 years serving individuals, corporations, and institutions across
+                Over 12+ years serving individuals, corporations, and institutions across
                 Kenya with integrity, precision, and unwavering commitment.
               </p>
             </div>
