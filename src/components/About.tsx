@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Users, Award, Clock, TrendingUp, CheckCircle, Star } from 'lucide-react';
 
 const stats = [
-  { icon: Clock,       label: 'Years Experience', value: 15,   suffix: '+' },
+  { icon: Clock,       label: 'Years Experience', value: 12,   suffix: '+' },
   { icon: Award,       label: 'Cases Won',         value: 500,  suffix: '+' },
   { icon: Users,       label: 'Happy Clients',     value: 1000, suffix: '+' },
   { icon: TrendingUp,  label: 'Success Rate',      value: 98,   suffix: '%' },
@@ -115,7 +115,7 @@ const About = () => {
               </div>
               <div>
                 <p className="text-[10px] sm:text-xs font-bold text-[#0d2340] leading-tight">Est. 2014</p>
-                <p className="text-[8px] sm:text-[10px] text-[#6a6a6a] leading-tight">15+ years of practice</p>
+                <p className="text-[8px] sm:text-[10px] text-[#6a6a6a] leading-tight">12+ years of practice</p>
               </div>
             </div>
 
