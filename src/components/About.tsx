@@ -79,7 +79,7 @@ const About = () => {
             </span>
           </div>
           <h2 className="anim-item text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0d2340] leading-tight">
-            Kenya's Advocates for Justice,<br className="hidden sm:block" /> Integrity & Results
+            Kenya's Law Firm Of Choice,<br className="hidden sm:block" /> Integrity & Results
           </h2>
         </div>
 
