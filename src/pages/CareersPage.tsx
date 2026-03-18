@@ -104,8 +104,8 @@ const CareersPage = () => {
           </p>
           <div className="hidden sm:flex items-center gap-8 mt-8 pt-8 border-t border-white/10">
             {[
-              { val: '15+',  label: 'Years in practice'  },
-              { val: '6',    label: 'Practice areas'     },
+              { val: '12+',  label: 'Years in practice'  },
+              { val: '10',    label: 'Practice areas'     },
               { val: '100%', label: 'Partner-led hiring' },
             ].map(({ val, label }) => (
               <div key={label}>
