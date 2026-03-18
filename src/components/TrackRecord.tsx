@@ -5,7 +5,7 @@ const stats = [
   { num: '12', suffix: '+', label: 'Years of practice' },
   { num: '98', suffix: '%', label: 'Case success rate' },
   { num: '1K', suffix: '+', label: 'Satisfied clients' },
-  { num: '14', suffix: '',  label: 'Practice areas'   },
+  { num: '10', suffix: '',  label: 'Practice areas'   },
 ];
 
 const pillars = [
