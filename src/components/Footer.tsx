@@ -17,6 +17,7 @@ const Footer = () => {
   ];
 
   const legalServices = [
+    'Health and Medical Law',
     'Corporate Law',
     'Litigation & Dispute Resolution',
     'Real Estate & Conveyancing',
