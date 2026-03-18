@@ -71,7 +71,7 @@ const News = () => {
               </span>
             </div>
             <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#1a1a1a] leading-tight">
-              Latest Blog Posts
+              Latest Insights
             </h2>
           </div>
           {!isLoading && !error && posts.length > 0 && (
@@ -101,7 +101,7 @@ const News = () => {
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 mx-auto mb-3">
                 <AlertCircle className="h-4 w-4 text-red-500" />
               </div>
-              <h3 className="text-sm font-bold text-[#1a1a1a] mb-1">Unable to Load Posts</h3>
+              <h3 className="text-sm font-bold text-[#1a1a1a] mb-1">Unable to Load Insights</h3>
               <p className="text-xs text-[#6a6a6a] mb-4 leading-relaxed">{error}</p>
               <button
                 onClick={() => { setError(null); window.location.reload(); }}
