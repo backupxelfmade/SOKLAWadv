@@ -16,7 +16,7 @@ const Navbar = () => {
     { href: '/team', label: 'Team', isRoute: true },
     { href: '/gallery', label: 'Media Gallery', isRoute: true },
     { href: '/careers', label: 'Careers', isRoute: true },
-    { href: '/blog', label: 'Blog', isRoute: true },
+    { href: '/blog', label: 'Insights', isRoute: true },
     { href: '/contact', label: 'Contact', isRoute: true },
   ];
 
