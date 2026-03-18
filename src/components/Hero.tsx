@@ -209,7 +209,7 @@ const Hero = () => {
             }`}
             style={stagger(4)}
           >
-            1,000+ clients protected &nbsp;·&nbsp; 98% success rate &nbsp;·&nbsp; 15 years in practice
+            1,000+ clients protected &nbsp;·&nbsp; 98% success rate &nbsp;·&nbsp; 12+ years in practice
           </p>
 
           {/* CTAs */}
