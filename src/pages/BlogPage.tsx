@@ -84,7 +84,7 @@ const BlogPage: React.FC = () => {
                   Insights
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">Blog</h1>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">Insights</h1>
             </div>
           </div>
           <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-10 sm:py-16 flex items-center justify-center">
