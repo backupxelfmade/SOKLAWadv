@@ -207,7 +207,7 @@ ${formData.message}
             <div className="animate-on-scroll opacity-0 rounded-xl sm:rounded-2xl overflow-hidden border border-[#e8e0d0]">
               <iframe
                 title="SOK Law Office Location"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.820262983408!2d36.81541707534238!3d-1.2993107356429749!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f10d9103a4f51%3A0xf8f3addf8df84972!2sUpper%20Hill%20Gardens%2C%20Ragati%20Rd%2C%20Nairobi!5e0!3m2!1sen!2ske!4v1700000000000!5m2!1sen!2ske"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d490.3!2d36.8088322!3d-1.2940974!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMcKwMTcnMzguOCJTIDM2wrA0OCczMS44IkU!5e0!3m2!1sen!2ske!4v1710000000000!5m2!1sen!2ske"
                 width="100%"
                 height="200"
                 style={{ border: 0, display: 'block' }}
