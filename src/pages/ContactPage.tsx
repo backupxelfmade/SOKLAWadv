@@ -145,7 +145,7 @@ ${formData.message}
                   </div>
                   <p className="text-xs sm:text-sm text-[#4a4a4a] leading-relaxed">
                     Upperhill Gardens, Block D11, 3rd Ngong Avenue<br />
-                    Milimani Area opp Kenya National Library Service
+                    Milimani Area opp Kenya Bankers
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
