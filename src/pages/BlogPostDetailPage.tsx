@@ -77,7 +77,7 @@ const ErrorState = ({ message }: { message: string }) => (
           className="inline-flex items-center gap-1.5 bg-[#bfa06f] hover:bg-[#a08a5f] text-white text-xs sm:text-sm font-semibold px-5 py-2.5 rounded-full transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Blog
+          Back to Insights
         </Link>
       </div>
     </div>
@@ -157,7 +157,7 @@ const BlogPostDetailPage: React.FC = () => {
               <span className="text-white/20 text-[0.65rem]">/</span>
               <Link to="/" className="text-white/35 hover:text-white/70 text-[0.65rem] sm:text-xs transition-colors">Home</Link>
               <span className="text-white/20 text-[0.65rem]">/</span>
-              <Link to="/blog" className="text-white/35 hover:text-white/70 text-[0.65rem] sm:text-xs transition-colors">Blog</Link>
+              <Link to="/blog" className="text-white/35 hover:text-white/70 text-[0.65rem] sm:text-xs transition-colors">Insights</Link>
               <span className="text-white/20 text-[0.65rem]">/</span>
               <span className="text-white/35 text-[0.65rem] sm:text-xs truncate max-w-[160px] sm:max-w-xs">{post.title}</span>
             </div>
