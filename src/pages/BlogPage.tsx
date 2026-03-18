@@ -125,7 +125,7 @@ const BlogPage: React.FC = () => {
               className="group inline-flex items-center gap-1 text-white/50 hover:text-white text-[0.6rem] sm:text-xs font-semibold transition-colors mb-4 sm:mb-6"
             >
               <ArrowLeft className="h-2.5 w-2.5 group-hover:-translate-x-0.5 transition-transform" />
-              Back to News
+              Back
             </button>
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
               <span className="block h-px w-5 sm:w-8 bg-[#bfa06f] flex-shrink-0" />
