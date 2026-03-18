@@ -12,7 +12,7 @@ const pillars = [
   {
     icon: Shield,
     title: 'Proven Legal Expertise',
-    body: 'Deep knowledge across 14 practice areas — from commercial litigation to family succession — grounded in 12+ years of Kenyan legal practice.',
+    body: 'Deep knowledge across 10 practice areas — from commercial litigation to family succession — grounded in 12+ years of Kenyan legal practice.',
   },
   {
     icon: Users,
