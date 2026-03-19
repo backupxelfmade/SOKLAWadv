@@ -178,7 +178,7 @@ ${formData.message}
               </h3>
               <div className="space-y-2">
                 {[
-                  { day: 'Monday – Friday', hours: '8:00 AM – 6:00 PM' },
+                  { day: 'Monday – Friday', hours: '8:00 AM – 5:00 PM' },
                   { day: 'Saturday',        hours: 'On Prior Appointment' },
                   { day: 'Sunday',          hours: 'On prior Appointment' },
                 ].map(({ day, hours }) => (
