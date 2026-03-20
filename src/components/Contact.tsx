@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Phone, Mail, Clock, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Send, CheckCircle, AlertCircle, Navigation } from 'lucide-react';
 
-// ✅ FIX (Low): Email loaded from env — not scraped from source code
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL ?? 'Info@soklaw.co.ke';
 
 const VALIDATION_RULES = {
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  // ✅ FIX (Low): Strict E.164-style phone — rejects spaces/brackets-only strings
   phone: /^\+?[1-9]\d{6,14}$/,
   required: ['firstName', 'lastName', 'email', 'legalService', 'message'],
 };
@@ -20,11 +18,7 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'validation_error'>('idle');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-
-  // ✅ FIX (Medium): Honeypot state — bots fill this, humans never see it
   const [honeypot, setHoneypot] = useState('');
-
-  // ✅ FIX (Medium): Map only loads after explicit user click — no silent Google tracking
   const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
@@ -54,6 +48,16 @@ const Contact = () => {
     if (submitStatus !== 'idle') setSubmitStatus('idle');
   };
 
+  // ✅ FIX: Strip letters and disallowed characters from phone input in real-time
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Allow only: digits, +, spaces, hyphens, parentheses
+    const raw = e.target.value.replace(/[^\d\+\s\-\(\)]/g, '');
+    setFormData((prev) => ({ ...prev, phone: raw }));
+    if (validationErrors.phone)
+      setValidationErrors((prev) => ({ ...prev, phone: '' }));
+    if (submitStatus !== 'idle') setSubmitStatus('idle');
+  };
+
   const validateForm = () => {
     const errors: Record<string, string> = {};
     VALIDATION_RULES.required.forEach((field) => {
@@ -64,7 +68,6 @@ const Contact = () => {
       errors.email = 'Invalid email address';
     if (formData.phone && !VALIDATION_RULES.phone.test(formData.phone))
       errors.phone = 'Invalid phone number';
-    // ✅ FIX (Medium): Enforce max lengths in validation logic too
     if (formData.firstName.length > 50) errors.firstName = 'Must be 50 characters or fewer';
     if (formData.lastName.length > 50)  errors.lastName  = 'Must be 50 characters or fewer';
     setValidationErrors(errors);
@@ -74,9 +77,7 @@ const Contact = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✅ FIX (Medium): Honeypot check — bots fill this hidden field, humans don't
     if (honeypot) {
-      // Silently reject bot — show fake success so bots don't retry
       setSubmitStatus('success');
       return;
     }
@@ -86,39 +87,32 @@ const Contact = () => {
     setSubmitStatus('idle');
 
     try {
-      const emailBody = `
-New Contact Form Submission — SOK Law Website
+      // ✅ FIX (High): PII now sent to your Netlify function over HTTPS POST body —
+      //    never appears in a URL, browser history, or proxy logs.
+      const response = await fetch('/.netlify/functions/send-contact-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName:    formData.firstName,
+          lastName:     formData.lastName,
+          email:        formData.email,
+          phone:        formData.phone || 'Not provided',
+          legalService: formData.legalService,
+          message:      formData.message,
+          submittedAt:  new Date().toISOString(),
+        }),
+      });
 
-Name:    ${formData.firstName} ${formData.lastName}
-Email:   ${formData.email}
-Phone:   ${formData.phone || 'Not provided'}
-Service: ${formData.legalService}
-Date:    ${new Date().toLocaleString()}
-
-Message:
-${formData.message}
-      `.trim();
-
-      const subject = `New Legal Consultation Request — ${formData.firstName} ${formData.lastName}`;
-
-      const gmailUrl =
-        `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(CONTACT_EMAIL)}` +
-        `&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
-
-      // ✅ FIX (High): Detect popup blocker — window.open returns null when blocked
-      //    Previously: try/catch never caught this, always showed 'success'
-      const newWindow = window.open(gmailUrl, '_blank');
-
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        // Popup was blocked — do NOT clear the form, user still needs their data
-        setSubmitStatus('error');
-      } else {
-        // Confirmed open — safe to clear form and show success
-        setSubmitStatus('success');
-        setFormData({ firstName: '', lastName: '', email: '', phone: '', legalService: '', message: '' });
-        setValidationErrors({});
-        setHoneypot('');
+      if (!response.ok) {
+        // Surface server validation errors (e.g. 400) vs server faults (500)
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error ?? `Request failed: ${response.status}`);
       }
+
+      setSubmitStatus('success');
+      setFormData({ firstName: '', lastName: '', email: '', phone: '', legalService: '', message: '' });
+      setValidationErrors({});
+      setHoneypot('');
     } catch {
       setSubmitStatus('error');
     } finally {
@@ -191,7 +185,6 @@ ${formData.message}
                   <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#bfa06f]/10 flex-shrink-0">
                     <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#bfa06f]" />
                   </div>
-                  {/* ✅ FIX (Low): Email rendered from env variable, not hardcoded literal */}
                   <a
                     href={`mailto:${CONTACT_EMAIL}`}
                     className="text-xs sm:text-sm text-[#4a4a4a] hover:text-[#bfa06f] transition-colors"
@@ -225,7 +218,7 @@ ${formData.message}
               </div>
             </div>
 
-            {/* ✅ FIX (Medium): Map lazy-loads on user consent — no silent Google tracking on page load */}
+            {/* ✅ REDESIGNED: Map consent placeholder styled to match the site's aesthetic */}
             <div className="animate-on-scroll opacity-0 rounded-xl sm:rounded-2xl overflow-hidden border border-[#e8e0d0] shadow-sm">
               {mapLoaded ? (
                 <iframe
@@ -239,16 +232,66 @@ ${formData.message}
                   title="SOK Law Office Location"
                 />
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setMapLoaded(true)}
-                  className="w-full h-[220px] flex flex-col items-center justify-center gap-2 bg-[#f0ebe0] hover:bg-[#e8e0d0] transition-colors cursor-pointer"
-                  aria-label="Load Google Maps"
-                >
-                  <MapPin className="h-6 w-6 text-[#bfa06f]" />
-                  <span className="text-xs text-[#4a4a4a]">Click to load map</span>
-                  <span className="text-[0.6rem] text-[#6a6a6a]">Loads Google Maps (third-party)</span>
-                </button>
+                /* Consent placeholder — dot-grid map texture + address preview */
+                <div className="relative w-full h-[220px] bg-[#f0ebe0] overflow-hidden">
+
+                  {/* Decorative dot-grid background — evokes a map without loading one */}
+                  <svg
+                    className="absolute inset-0 w-full h-full opacity-20"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <defs>
+                      <pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <circle cx="2" cy="2" r="1.5" fill="#bfa06f" />
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#dots)" />
+                  </svg>
+
+                  {/* Fake road lines for map feel */}
+                  <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="0" y1="80"  x2="100%" y2="80"  stroke="#bfa06f" strokeWidth="6" />
+                    <line x1="0" y1="150" x2="100%" y2="150" stroke="#bfa06f" strokeWidth="3" />
+                    <line x1="90"  y1="0" x2="90"  y2="100%" stroke="#bfa06f" strokeWidth="4" />
+                    <line x1="200" y1="0" x2="200" y2="100%" stroke="#bfa06f" strokeWidth="2" />
+                    <line x1="310" y1="0" x2="310" y2="100%" stroke="#bfa06f" strokeWidth="3" />
+                  </svg>
+
+                  {/* Gradient overlay — fades from bottom for text legibility */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#f0ebe0]/90 via-[#f0ebe0]/40 to-transparent" />
+
+                  {/* Address preview pill — top left */}
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/80 backdrop-blur-sm border border-[#e8e0d0] rounded-full px-3 py-1 shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-[#bfa06f] flex-shrink-0" />
+                    <span className="text-[0.6rem] font-semibold text-[#1a1a1a] truncate max-w-[180px]">
+                      Upperhill Gardens, 3rd Ngong Ave
+                    </span>
+                  </div>
+
+                  {/* Centre CTA */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                    {/* Pin icon with pulse ring */}
+                    <div className="relative flex items-center justify-center">
+                      <span className="absolute w-12 h-12 rounded-full bg-[#bfa06f]/20 animate-ping" />
+                      <div className="relative z-10 w-10 h-10 rounded-full bg-white shadow-md border border-[#e8e0d0] flex items-center justify-center">
+                        <MapPin className="h-5 w-5 text-[#bfa06f]" />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setMapLoaded(true)}
+                      className="flex items-center gap-2 bg-[#bfa06f] hover:bg-[#a08a5f] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
+                    >
+                      <Navigation className="h-3 w-3" />
+                      View on Google Maps
+                    </button>
+
+                    <p className="text-[0.58rem] text-[#6a6a6a]">
+                      Loads Google Maps · Third-party content
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -267,17 +310,13 @@ ${formData.message}
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
-              {/* ✅ FIX (Medium): Honeypot — visually hidden, bots fill it, humans never see it */}
+              {/* Honeypot */}
               <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
                 <label htmlFor="website">Website</label>
                 <input
-                  type="text"
-                  id="website"
-                  name="website"
-                  value={honeypot}
-                  onChange={(e) => setHoneypot(e.target.value)}
-                  tabIndex={-1}
-                  autoComplete="off"
+                  type="text" id="website" name="website"
+                  value={honeypot} onChange={(e) => setHoneypot(e.target.value)}
+                  tabIndex={-1} autoComplete="off"
                 />
               </div>
 
@@ -285,7 +324,6 @@ ${formData.message}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>First Name *</label>
-                  {/* ✅ FIX (Medium): maxLength added to HTML attribute */}
                   <input
                     type="text" name="firstName" value={formData.firstName}
                     onChange={handleInputChange} placeholder="First name"
@@ -298,7 +336,6 @@ ${formData.message}
                 </div>
                 <div>
                   <label className={labelClass}>Last Name *</label>
-                  {/* ✅ FIX (Medium): maxLength added to HTML attribute */}
                   <input
                     type="text" name="lastName" value={formData.lastName}
                     onChange={handleInputChange} placeholder="Last name"
@@ -327,10 +364,13 @@ ${formData.message}
                 </div>
                 <div>
                   <label className={labelClass}>Phone</label>
+                  {/* ✅ FIX: Uses dedicated handlePhoneChange that strips letters on every keystroke */}
                   <input
                     type="tel" name="phone" value={formData.phone}
-                    onChange={handleInputChange} placeholder="+254700000000"
+                    onChange={handlePhoneChange}
+                    placeholder="+254700000000"
                     autoComplete="tel" maxLength={16}
+                    inputMode="tel"
                     className={inputClass('phone')}
                   />
                   {validationErrors.phone && (
@@ -398,7 +438,7 @@ ${formData.message}
                 className="w-full flex items-center justify-center gap-2 bg-[#bfa06f] hover:bg-[#a08a5f] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm sm:text-base py-3 sm:py-3.5 rounded-full shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
               >
                 {isSubmitting
-                  ? <><span className="animate-spin h-4 w-4 border-2 border-white/40 border-t-white rounded-full" /><span>Opening Gmail…</span></>
+                  ? <><span className="animate-spin h-4 w-4 border-2 border-white/40 border-t-white rounded-full" /><span>Sending…</span></>
                   : <><Send className="h-4 w-4" /><span>Send Message</span></>
                 }
               </button>
@@ -418,9 +458,9 @@ ${formData.message}
               <div className="mt-4 flex items-start gap-3 bg-[#bfa06f]/8 border border-[#bfa06f]/30 rounded-xl px-4 py-3">
                 <CheckCircle className="h-4 w-4 text-[#bfa06f] mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-[#1a1a1a]">Gmail opened in a new tab</p>
+                  <p className="text-xs font-semibold text-[#1a1a1a]">Message sent successfully</p>
                   <p className="text-[0.65rem] text-[#4a4a4a] mt-0.5">
-                    Your message is pre-filled — just click Send in Gmail to complete your inquiry.
+                    Thank you! We'll be in touch within one business day.
                   </p>
                 </div>
               </div>
@@ -429,11 +469,9 @@ ${formData.message}
               <div className="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                 <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-red-800">Unable to open Gmail</p>
+                  <p className="text-xs font-semibold text-red-800">Message could not be sent</p>
                   <p className="text-[0.65rem] text-red-700 mt-0.5">
-                    Your browser may have blocked the popup. Please allow popups for this site,
-                    or email us directly at{' '}
-                    {/* ✅ FIX (Low): Email from env variable — not hardcoded literal */}
+                    Please try again or email us directly at{' '}
                     <a href={`mailto:${CONTACT_EMAIL}`} className="underline">{CONTACT_EMAIL}</a>
                   </p>
                 </div>
