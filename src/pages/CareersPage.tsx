@@ -1,11 +1,11 @@
-import React, { useState } from 'react'; // ← removed useEffect
+import React, { useState } from 'react';
 import {
   Briefcase, MapPin, Clock, GraduationCap, Heart,
   Users, TrendingUp, Award, X, ArrowRight, CheckCircle, Loader2,
 } from 'lucide-react';
 import Footer from '../components/Footer';
-import { useCareers } from '../hooks/useSiteData';           // ← CHANGED
-import type { Career } from '../context/AppDataContext';     // ← CHANGED (was jobsApi)
+import { useCareers } from '../hooks/useSiteData';
+import type { Career } from '../context/AppDataContext';
 
 const benefits = [
   {
@@ -63,19 +63,20 @@ const steps = [
 
 const CareersPage = () => {
   const [showModal, setShowModal] = useState(false);
-
-  // ← CHANGED: reads from AppDataContext — zero extra API calls
   const { careers, loading } = useCareers();
-
-  // Filter active positions client-side — no extra query needed
   const openPositions = careers.filter((c) => c.is_active !== false);
 
+  // ── ✅ CHANGE: Gmail Compose URL replaces window.location.href mailto ──
   const handleApply = (position: Career) => {
     const subject = encodeURIComponent(`Application for ${position.title}`);
     const body = encodeURIComponent(
       `Dear Hiring Team,\n\nI am writing to express my interest in the ${position.title} position in the ${position.department ?? ''} department at SOK Law.\n\nPlease find my CV and cover letter attached.\n\nBest regards`
     );
-    window.location.href = `mailto:careers@soklaw.co.ke?subject=${subject}&body=${body}`;
+    window.open(
+      `https://mail.google.com/mail/?view=cm&fs=1&to=careers@soklaw.co.ke` +
+      `&su=${subject}&body=${body}`,
+      '_blank'
+    );
   };
 
   return (
@@ -396,8 +397,12 @@ const CareersPage = () => {
               Send Your CV
               <ArrowRight className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
             </a>
+            {/* ── ✅ FIX: was rendering as raw markdown text ── */}
             <p className="text-[0.55rem] sm:text-xs text-white/30 mt-2.5 sm:mt-3">
-              careers@soklaw.co.ke · Subject: "Open Application — [Your Name]"
+              <a href="mailto:careers@soklaw.co.ke" className="hover:text-white/60 transition-colors">
+                careers@soklaw.co.ke
+              </a>
+              {' '}· Subject: "Open Application — [Your Name]"
             </p>
           </div>
         </section>
@@ -483,7 +488,7 @@ const CareersPage = () => {
                   </div>
                   <p className="text-[0.6rem] sm:text-xs text-[#bfa06f] mb-3 pl-5">{subtitle}</p>
                   <div className="grid sm:grid-cols-2 gap-2">
-                    {[{ label: 'Who Can Apply', items: eligibility }, { label: 'What You\'ll Do', items: features }].map(({ label, items }) => (
+                    {[{ label: 'Who Can Apply', items: eligibility }, { label: "What You'll Do", items: features }].map(({ label, items }) => (
                       <div key={label} className="bg-[#f9f7f1] border border-[#e8e0d0] rounded-xl p-3 sm:p-4">
                         <p className="text-[0.6rem] sm:text-xs font-bold text-[#bfa06f] uppercase tracking-widest mb-2.5">
                           {label}
@@ -513,6 +518,7 @@ const CareersPage = () => {
                   Send us: a cover letter telling us <em>why SOK Law specifically</em>, your CV, academic
                   transcripts, two referees, and a copy of your ID.
                 </p>
+                {/* ── ✅ FIX: was rendering as raw markdown text ── */}
                 <a
                   href="mailto:careers@soklaw.co.ke"
                   className="inline-flex items-center gap-1 text-[0.65rem] sm:text-sm font-semibold text-[#bfa06f] hover:underline"
