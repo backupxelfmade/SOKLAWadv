@@ -88,7 +88,7 @@ const Footer = () => {
               className="h-9 sm:h-10 w-auto mb-3"
             />
             <p className="text-[0.6rem] sm:text-[0.65rem] font-semibold uppercase tracking-widest text-[#bfa06f] mb-3 leading-relaxed">
-              SOK Law
+              SOK Law Advocates
             </p>
             <p className="text-[0.7rem] sm:text-sm text-[#6a6a6a] leading-relaxed mb-5 max-w-xs">
               A full-service law firm in Nairobi offering strategic, dependable
