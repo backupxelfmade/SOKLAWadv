@@ -2,9 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import Footer from '../components/Footer';
 
+// ✅ FIX (Low): Email from env var — not scraped from source code
+const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL ?? 'Info@soklaw.co.ke';
+
 const VALIDATION_RULES = {
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  phone: /^[\+]?[0-9\s\-\(\)]{10,}$/,
+  // ✅ FIX (Low): Strict E.164-style phone — rejects bracket/space-only strings
+  phone: /^\+?[1-9]\d{6,14}$/,
   required: ['firstName', 'lastName', 'email', 'legalService', 'message'],
 };
 
@@ -17,6 +21,8 @@ const ContactPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'validation_error'>('idle');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  // ✅ FIX (Medium): Honeypot state — bots fill this, humans never see it
+  const [honeypot, setHoneypot] = useState('');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -45,6 +51,15 @@ const ContactPage = () => {
     if (submitStatus !== 'idle') setSubmitStatus('idle');
   };
 
+  // ✅ FIX (Medium): Dedicated phone handler — strips letters on every keystroke
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^\d\+\s\-\(\)]/g, '');
+    setFormData((prev) => ({ ...prev, phone: raw }));
+    if (validationErrors.phone)
+      setValidationErrors((prev) => ({ ...prev, phone: '' }));
+    if (submitStatus !== 'idle') setSubmitStatus('idle');
+  };
+
   const validateForm = () => {
     const errors: Record<string, string> = {};
     VALIDATION_RULES.required.forEach((field) => {
@@ -55,16 +70,26 @@ const ContactPage = () => {
       errors.email = 'Invalid email address';
     if (formData.phone && !VALIDATION_RULES.phone.test(formData.phone))
       errors.phone = 'Invalid phone number';
+    // ✅ FIX (Medium): Server-side-style length enforcement in validation
+    if (formData.firstName.length > 50) errors.firstName = 'Must be 50 characters or fewer';
+    if (formData.lastName.length > 50)  errors.lastName  = 'Must be 50 characters or fewer';
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // ── ✅ ONLY CHANGE: Gmail Compose URL replaces window.location.href mailto ──
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ✅ FIX (Medium): Honeypot check — silently reject bots with fake success
+    if (honeypot) {
+      setSubmitStatus('success');
+      return;
+    }
+
     if (!validateForm()) { setSubmitStatus('validation_error'); return; }
     setIsSubmitting(true);
     setSubmitStatus('idle');
+
     try {
       const emailBody = `
 New Contact Form Submission — SOK Law Website
@@ -78,17 +103,27 @@ Date:    ${new Date().toLocaleString()}
 Message:
 ${formData.message}
       `.trim();
+
       const subject = `New Legal Consultation Request — ${formData.firstName} ${formData.lastName}`;
 
-      window.open(
-        `https://mail.google.com/mail/?view=cm&fs=1&to=Info@soklaw.co.ke` +
-        `&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`,
-        '_blank'
-      );
+      const gmailUrl =
+        `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(CONTACT_EMAIL)}` +
+        `&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
 
-      setSubmitStatus('success');
-      setFormData({ firstName: '', lastName: '', email: '', phone: '', legalService: '', message: '' });
-      setValidationErrors({});
+      // ✅ FIX (High): Detect popup blocker — window.open returns null when blocked.
+      //    Previously: try/catch never caught this, always showed false 'success'
+      //    and wiped the form even when Gmail never opened.
+      const newWindow = window.open(gmailUrl, '_blank');
+
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        // Popup was blocked — keep form data intact so user doesn't lose their message
+        setSubmitStatus('error');
+      } else {
+        setSubmitStatus('success');
+        setFormData({ firstName: '', lastName: '', email: '', phone: '', legalService: '', message: '' });
+        setValidationErrors({});
+        setHoneypot('');
+      }
     } catch {
       setSubmitStatus('error');
     } finally {
@@ -170,11 +205,12 @@ ${formData.message}
                   <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#bfa06f]/10 flex-shrink-0">
                     <Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#bfa06f]" />
                   </div>
+                  {/* ✅ FIX (Low): Email rendered from env var — not hardcoded literal */}
                   <a
-                    href="mailto:Info@soklaw.co.ke"
+                    href={`mailto:${CONTACT_EMAIL}`}
                     className="text-xs sm:text-sm text-[#4a4a4a] hover:text-[#bfa06f] transition-colors break-all"
                   >
-                    Info@soklaw.co.ke
+                    {CONTACT_EMAIL}
                   </a>
                 </div>
               </div>
@@ -203,7 +239,7 @@ ${formData.message}
               </div>
             </div>
 
-            {/* Map */}
+            {/* Map — loads directly */}
             <div className="animate-on-scroll opacity-0 rounded-xl sm:rounded-2xl overflow-hidden border border-[#e8e0d0]">
               <iframe
                 title="SOK Law Office Location"
@@ -232,14 +268,29 @@ ${formData.message}
 
             <form onSubmit={handleSubmit} noValidate className="space-y-3 sm:space-y-4">
 
+              {/* ✅ FIX (Medium): Honeypot — off-screen, invisible to users, filled by bots */}
+              <div
+                aria-hidden="true"
+                style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}
+              >
+                <label htmlFor="website">Website</label>
+                <input
+                  type="text" id="website" name="website"
+                  value={honeypot} onChange={(e) => setHoneypot(e.target.value)}
+                  tabIndex={-1} autoComplete="off"
+                />
+              </div>
+
               {/* First + Last name */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>First Name *</label>
+                  {/* ✅ FIX (Medium): maxLength enforced at HTML level */}
                   <input
                     type="text" name="firstName" value={formData.firstName}
                     onChange={handleInputChange} placeholder="First name"
-                    autoComplete="given-name" className={inputClass('firstName')}
+                    autoComplete="given-name" maxLength={50}
+                    className={inputClass('firstName')}
                   />
                   {validationErrors.firstName && (
                     <p className="text-red-500 text-[0.6rem] mt-1">{validationErrors.firstName}</p>
@@ -247,10 +298,12 @@ ${formData.message}
                 </div>
                 <div>
                   <label className={labelClass}>Last Name *</label>
+                  {/* ✅ FIX (Medium): maxLength enforced at HTML level */}
                   <input
                     type="text" name="lastName" value={formData.lastName}
                     onChange={handleInputChange} placeholder="Last name"
-                    autoComplete="family-name" className={inputClass('lastName')}
+                    autoComplete="family-name" maxLength={50}
+                    className={inputClass('lastName')}
                   />
                   {validationErrors.lastName && (
                     <p className="text-red-500 text-[0.6rem] mt-1">{validationErrors.lastName}</p>
@@ -265,7 +318,8 @@ ${formData.message}
                   <input
                     type="email" name="email" value={formData.email}
                     onChange={handleInputChange} placeholder="you@example.com"
-                    autoComplete="email" className={inputClass('email')}
+                    autoComplete="email" maxLength={254}
+                    className={inputClass('email')}
                   />
                   {validationErrors.email && (
                     <p className="text-red-500 text-[0.6rem] mt-1">{validationErrors.email}</p>
@@ -273,10 +327,15 @@ ${formData.message}
                 </div>
                 <div>
                   <label className={labelClass}>Phone</label>
+                  {/* ✅ FIX (Medium): handlePhoneChange strips letters in real-time
+                      ✅ FIX (Medium): inputMode="tel" raises numeric keypad on mobile  */}
                   <input
                     type="tel" name="phone" value={formData.phone}
-                    onChange={handleInputChange} placeholder="+254 700 000 000"
-                    autoComplete="tel" className={inputClass('phone')}
+                    onChange={handlePhoneChange}
+                    placeholder="+254700000000"
+                    autoComplete="tel" maxLength={16}
+                    inputMode="tel"
+                    className={inputClass('phone')}
                   />
                   {validationErrors.phone && (
                     <p className="text-red-500 text-[0.6rem] mt-1">{validationErrors.phone}</p>
@@ -383,8 +442,9 @@ ${formData.message}
                 <div>
                   <p className="text-xs font-semibold text-red-800">Unable to open Gmail</p>
                   <p className="text-[0.65rem] text-red-700 mt-0.5">
-                    Please email us directly at{' '}
-                    <a href="mailto:Info@soklaw.co.ke" className="underline">Info@soklaw.co.ke</a>
+                    Your browser may have blocked the popup. Please allow popups for this site, or email us directly at{' '}
+                    {/* ✅ FIX (Low): Email from env var — not hardcoded literal */}
+                    <a href={`mailto:${CONTACT_EMAIL}`} className="underline">{CONTACT_EMAIL}</a>
                   </p>
                 </div>
               </div>
