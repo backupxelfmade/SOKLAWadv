@@ -61,23 +61,44 @@ const steps = [
   { label: 'Welcome',    desc: 'Offer letter, onboarding, and a desk waiting at Upperhill Gardens' },
 ];
 
+// ── Shared Gmail opener helpers ──
+const openGmailApply = (position: Career) => {
+  const subject = encodeURIComponent(`Application for ${position.title}`);
+  const body = encodeURIComponent(
+    `Dear Hiring Team,\n\nI am writing to express my interest in the ${position.title} position in the ${position.department ?? ''} department at SOK Law.\n\nPlease find my CV and cover letter attached.\n\nBest regards`
+  );
+  window.open(
+    `https://mail.google.com/mail/?view=cm&fs=1&to=careers@soklaw.co.ke&su=${subject}&body=${body}`,
+    '_blank'
+  );
+};
+
+const openGmailCV = () => {
+  const subject = encodeURIComponent('Open Application — [Your Name]');
+  const body = encodeURIComponent(
+    'Dear Hiring Team,\n\nI am writing to express my interest in joining SOK Law.\n\nPlease find my CV attached.\n\nBest regards'
+  );
+  window.open(
+    `https://mail.google.com/mail/?view=cm&fs=1&to=careers@soklaw.co.ke&su=${subject}&body=${body}`,
+    '_blank'
+  );
+};
+
+const openGmailInternship = (type: 'Internship' | 'Pupillage') => {
+  const subject = encodeURIComponent(`${type} Application`);
+  const body = encodeURIComponent(
+    `Dear Hiring Team,\n\nI am writing to apply for the ${type} Program at SOK Law.\n\nI have attached my cover letter, CV, academic transcripts, two referees, and a copy of my ID.\n\nBest regards`
+  );
+  window.open(
+    `https://mail.google.com/mail/?view=cm&fs=1&to=careers@soklaw.co.ke&su=${subject}&body=${body}`,
+    '_blank'
+  );
+};
+
 const CareersPage = () => {
   const [showModal, setShowModal] = useState(false);
   const { careers, loading } = useCareers();
   const openPositions = careers.filter((c) => c.is_active !== false);
-
-  // ── ✅ CHANGE: Gmail Compose URL replaces window.location.href mailto ──
-  const handleApply = (position: Career) => {
-    const subject = encodeURIComponent(`Application for ${position.title}`);
-    const body = encodeURIComponent(
-      `Dear Hiring Team,\n\nI am writing to express my interest in the ${position.title} position in the ${position.department ?? ''} department at SOK Law.\n\nPlease find my CV and cover letter attached.\n\nBest regards`
-    );
-    window.open(
-      `https://mail.google.com/mail/?view=cm&fs=1&to=careers@soklaw.co.ke` +
-      `&su=${subject}&body=${body}`,
-      '_blank'
-    );
-  };
 
   return (
     <div className="min-h-screen bg-white w-full overflow-x-hidden">
@@ -106,7 +127,7 @@ const CareersPage = () => {
           <div className="hidden sm:flex items-center gap-8 mt-8 pt-8 border-t border-white/10">
             {[
               { val: '12+',  label: 'Years in practice'  },
-              { val: '10',    label: 'Practice areas'     },
+              { val: '10',   label: 'Practice areas'     },
               { val: '100%', label: 'Partner-led hiring' },
             ].map(({ val, label }) => (
               <div key={label}>
@@ -249,8 +270,9 @@ const CareersPage = () => {
                         {position.department}
                       </p>
                     </div>
+                    {/* ── ✅ Gmail Compose ── */}
                     <button
-                      onClick={() => handleApply(position)}
+                      onClick={() => openGmailApply(position)}
                       className="flex-shrink-0 flex items-center gap-1 sm:gap-1.5 bg-[#bfa06f] hover:bg-[#a08a5f] text-white text-[0.6rem] sm:text-sm font-semibold px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-full transition-colors duration-200"
                     >
                       Apply
@@ -390,14 +412,14 @@ const CareersPage = () => {
               paralegal, or legal professional who believes in the kind of firm we're building —
               send us your CV. We read every one.
             </p>
-            <a
-              href="mailto:careers@soklaw.co.ke"
+            {/* ── ✅ Gmail Compose ── */}
+            <button
+              onClick={openGmailCV}
               className="inline-flex items-center gap-1.5 bg-[#bfa06f] hover:bg-[#d4b483] text-white text-[0.65rem] sm:text-sm font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-colors duration-200"
             >
               Send Your CV
               <ArrowRight className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
-            </a>
-            {/* ── ✅ FIX: was rendering as raw markdown text ── */}
+            </button>
             <p className="text-[0.55rem] sm:text-xs text-white/30 mt-2.5 sm:mt-3">
               <a href="mailto:careers@soklaw.co.ke" className="hover:text-white/60 transition-colors">
                 careers@soklaw.co.ke
@@ -442,9 +464,10 @@ const CareersPage = () => {
                 small — we take fewer people so we can invest properly in each one."
               </p>
 
-              {[
+              {([
                 {
                   title: 'Internship Program',
+                  type: 'Internship' as const,
                   subtitle: 'For students and graduates not yet admitted to the bar',
                   eligibility: [
                     'Current law students (2nd year and above)',
@@ -462,6 +485,7 @@ const CareersPage = () => {
                 },
                 {
                   title: 'Pupillage Program',
+                  type: 'Pupillage' as const,
                   subtitle: 'For Kenya School of Law graduates awaiting admission',
                   eligibility: [
                     'Completed Kenya School of Law',
@@ -478,7 +502,7 @@ const CareersPage = () => {
                     'High-performing pupils are considered for retention',
                   ],
                 },
-              ].map(({ title, subtitle, eligibility, features }) => (
+              ]).map(({ title, type, subtitle, eligibility, features }) => (
                 <div key={title}>
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="block h-px w-3 bg-[#bfa06f]" />
@@ -504,32 +528,32 @@ const CareersPage = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* ── ✅ Gmail Compose per program type ── */}
+                  <div className="bg-[#bfa06f]/8 border border-[#bfa06f]/25 rounded-xl p-3.5 sm:p-5 mt-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="block h-px w-3 bg-[#bfa06f]" />
+                      <p className="text-[0.6rem] sm:text-xs font-bold text-[#bfa06f] uppercase tracking-widest">
+                        How to Apply
+                      </p>
+                    </div>
+                    <p className="text-[0.65rem] sm:text-sm text-[#4a4a4a] mb-2.5 leading-relaxed">
+                      Send us: a cover letter telling us <em>why SOK Law specifically</em>, your CV, academic
+                      transcripts, two referees, and a copy of your ID.
+                    </p>
+                    <button
+                      onClick={() => openGmailInternship(type)}
+                      className="inline-flex items-center gap-1 text-[0.65rem] sm:text-sm font-semibold text-[#bfa06f] hover:underline"
+                    >
+                      Apply via Gmail
+                      <ArrowRight className="h-2.5 w-2.5" />
+                    </button>
+                    <p className="text-[0.55rem] sm:text-xs text-[#aaa] mt-1">
+                      Subject: "{type} Application"
+                    </p>
+                  </div>
                 </div>
               ))}
-
-              <div className="bg-[#bfa06f]/8 border border-[#bfa06f]/25 rounded-xl p-3.5 sm:p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="block h-px w-3 bg-[#bfa06f]" />
-                  <p className="text-[0.6rem] sm:text-xs font-bold text-[#bfa06f] uppercase tracking-widest">
-                    How to Apply
-                  </p>
-                </div>
-                <p className="text-[0.65rem] sm:text-sm text-[#4a4a4a] mb-2.5 leading-relaxed">
-                  Send us: a cover letter telling us <em>why SOK Law specifically</em>, your CV, academic
-                  transcripts, two referees, and a copy of your ID.
-                </p>
-                {/* ── ✅ FIX: was rendering as raw markdown text ── */}
-                <a
-                  href="mailto:careers@soklaw.co.ke"
-                  className="inline-flex items-center gap-1 text-[0.65rem] sm:text-sm font-semibold text-[#bfa06f] hover:underline"
-                >
-                  careers@soklaw.co.ke
-                  <ArrowRight className="h-2.5 w-2.5" />
-                </a>
-                <p className="text-[0.55rem] sm:text-xs text-[#aaa] mt-1">
-                  Subject: "Internship Application" or "Pupillage Application"
-                </p>
-              </div>
 
               <button
                 onClick={() => setShowModal(false)}
