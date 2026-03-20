@@ -96,7 +96,7 @@ const Navbar = () => {
                   isScrolled ? 'text-[#7a6245]' : 'text-white/70'
                 }`}
               >
-                SOK Law
+                SOK Law Advocates
               </p>
             </Link>
 
@@ -191,7 +191,7 @@ const Navbar = () => {
           <div className="flex items-center gap-2">
             <Scale className="h-5 w-5 text-[#bfa06f]" />
             <span className="text-[9px] font-semibold tracking-widest uppercase text-[#7a6245]">
-              SOK Law
+              SOK Law Advocates
             </span>
           </div>
           <button
