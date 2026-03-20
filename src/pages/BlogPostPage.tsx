@@ -199,13 +199,13 @@ const BlogPostPage = () => {
           </div>
         </div>
 
-        {/* ── Feature image — bleeds below header ── */}
-        {post.feature_image && (
+        {/* Feature image — bleeds below header */}
+        {post.featuredImage && (
           <div className="max-w-3xl mx-auto px-3 sm:px-6 lg:px-8 -mt-0">
             <div className="w-full aspect-video sm:aspect-[21/9] overflow-hidden rounded-xl sm:rounded-2xl border border-[#e8e0d0] shadow-sm">
               <img
-                src={post.feature_image}
-                alt={post.title}
+                src={post.featuredImage.src}
+                alt={post.featuredImage.title || post.title}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -242,38 +242,7 @@ const BlogPostPage = () => {
             dangerouslySetInnerHTML={{ __html: post.html }}
           />
 
-          {/* ── Author bio ── */}
-          {post.authors?.[0]?.bio && (
-            <div className="mt-8 sm:mt-14 pt-5 sm:pt-8 border-t border-[#e8e0d0]">
-              <div className="flex items-start gap-3 sm:gap-4">
-                {post.authors[0].profile_image ? (
-                  <img
-                    src={post.authors[0].profile_image}
-                    alt={post.authors[0].name}
-                    className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl object-cover flex-shrink-0 border border-[#e8e0d0]"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-[#bfa06f]/10 flex-shrink-0">
-                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-[#bfa06f]" />
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="block h-px w-3 bg-[#bfa06f]" />
-                    <span className="text-[0.55rem] sm:text-[0.65rem] font-semibold uppercase tracking-widest text-[#bfa06f]">Author</span>
-                  </div>
-                  <h3 className="text-[0.7rem] sm:text-sm font-bold text-[#0d2340] mb-1">
-                    {post.authors[0].name}
-                  </h3>
-                  <p className="text-[0.6rem] sm:text-xs text-[#6a6a6a] leading-relaxed">
-                    {post.authors[0].bio}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Footer actions ── */}
+          {/* Footer actions ── */}
           <div className="mt-8 sm:mt-14 pt-5 sm:pt-8 border-t border-[#e8e0d0] flex items-center justify-between gap-3 flex-wrap">
             <button
               onClick={() => navigate(-1)}
